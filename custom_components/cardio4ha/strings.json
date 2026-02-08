@@ -1,0 +1,34 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Cardio4HA - Device Health Monitor",
+        "description": "Monitor the health of all your Home Assistant devices. Track unavailable devices, low batteries, and weak signals automatically.",
+        "data": {
+          "name": "Integration Name"
+        }
+      }
+    },
+    "error": {
+      "already_configured": "This integration is already configured."
+    },
+    "abort": {
+      "already_configured": "Cardio4HA is already configured.",
+      "single_instance_allowed": "Only a single instance of Cardio4HA is allowed."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Cardio4HA Options",
+        "description": "Configure thresholds and monitoring settings.",
+        "data": {
+          "update_interval": "Update Interval (seconds)",
+          "battery_critical": "Battery Critical Level (%)",
+          "battery_warning": "Battery Warning Level (%)",
+          "battery_low": "Battery Low Level (%)"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,94 @@
+# CLAUDE CODE STARTER PROMPT
+# Copy this entire prompt and give it to Claude Code to begin implementation
+
+I want to build Cardio4HA - a Home Assistant integration that monitors device health across 200+ devices.
+
+## YOUR TASK:
+
+1. **Read all documentation files** in /home/claude/cardio4ha_docs/ to understand the complete project:
+   - Start with README.md for navigation
+   - Read PROJECT_OVERVIEW.md for vision and goals
+   - Study TECHNICAL_SPECS.md for architecture details
+   - Focus on PHASE_1_CORE.md for implementation specifics
+
+2. **Implement Phase 1: Core Monitoring** completely:
+   - Create all files in custom_components/cardio4ha/
+   - Start with manifest.json and const.py
+   - Implement coordinator.py (MOST CRITICAL - this is the heart)
+   - Create sensor.py with all count sensors
+   - Add storage system for persistence
+   - Ensure proper sorting (unavailable by duration DESC, battery by level ASC)
+
+3. **Follow these critical requirements**:
+   - Use DataUpdateCoordinator pattern
+   - Implement unavailable tracking with timestamp persistence (survives HA restart)
+   - Detect battery entities by device_class and entity_id keywords
+   - Track Zigbee linkquality and WiFi RSSI
+   - Sort all results correctly (longest unavailable first, lowest battery first)
+   - Add comprehensive logging (DEBUG, INFO, ERROR)
+   - Handle errors gracefully
+   - Target performance: <5 seconds scan time for 200 devices
+
+4. **Key Focus Areas**:
+   - **coordinator.py**: Implement full scanning logic with:
+     * Entity state checking (unavailable/unknown)
+     * Duration tracking with persistence
+     * Battery level detection and severity classification
+     * Signal strength monitoring (Zigbee LQI, WiFi RSSI)
+     * Proper sorting and prioritization
+     * Summary statistics calculation
+   
+   - **Storage**: Use Home Assistant's Store class to save/load unavailable tracking data
+   
+   - **Performance**: Optimize for 200+ entities - use async operations, efficient lookups
+
+## DELIVERABLES:
+
+Phase 1 files to create:
+- custom_components/cardio4ha/__init__.py
+- custom_components/cardio4ha/manifest.json
+- custom_components/cardio4ha/const.py
+- custom_components/cardio4ha/coordinator.py (CRITICAL - most complex)
+- custom_components/cardio4ha/sensor.py
+- custom_components/cardio4ha/strings.json (basic version)
+
+## SUCCESS CRITERIA:
+
+✅ Integration installs without errors
+✅ All sensors created and showing data
+✅ Unavailable tracking persists across HA restarts
+✅ Battery devices detected and sorted (lowest first)
+✅ Signal issues detected (Zigbee + WiFi)
+✅ Scan completes in <5 seconds for 200 devices
+✅ No errors in logs
+✅ Clean, well-documented code
+
+## TESTING:
+
+After implementation:
+1. Copy files to Home Assistant config/custom_components/cardio4ha/
+2. Restart Home Assistant
+3. Add integration via UI (Settings > Devices & Services)
+4. Verify sensors created
+5. Check logs for errors
+6. Test with real unavailable devices
+7. Restart HA and verify persistence
+
+## IMPORTANT NOTES:
+
+- Follow Home Assistant best practices
+- Use type hints everywhere
+- Add docstrings to all functions
+- Log important events (scan start/end, issue counts, errors)
+- Handle edge cases (no battery sensors, no unavailable devices, etc.)
+- Make code maintainable and extensible
+
+## EXTRA CONTEXT:
+
+This is an HACS integration that will be published publicly. Code quality and user experience are paramount. The goal is to help users with 200+ devices stay on top of device health without manual checking.
+
+---
+
+Start with PHASE_1_CORE.md and implement everything exactly as specified. Ask questions if anything is unclear!
+
+Let's build an amazing device health monitor for Home Assistant! 🚀
