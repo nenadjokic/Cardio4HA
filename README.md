@@ -156,29 +156,9 @@ cards:
       - sensor.cardio4ha_healthy_devices
 ```
 
-### Markdown Card (With templates - requires custom card):
+### 📋 Detailed List Cards
 
-If you have [markdown card with templates](https://github.com/custom-cards/text-element), you can use:
-
-```yaml
-type: markdown
-content: |
-  ## 🏥 Device Health Status
-
-  {% if states('sensor.cardio4ha_critical_issues') | int > 0 %}
-  ### ⚠️ {{ states('sensor.cardio4ha_critical_issues') }} Critical Issues!
-  Immediate attention required!
-  {% endif %}
-
-  - 🔴 Unavailable: **{{ states('sensor.cardio4ha_unavailable_devices') }}**
-  - 🔋 Low Battery: **{{ states('sensor.cardio4ha_low_battery_devices') }}**
-  - 📡 Weak Signal: **{{ states('sensor.cardio4ha_weak_signal_devices') }}**
-  - ✅ Healthy: **{{ states('sensor.cardio4ha_healthy_devices') }}**
-```
-
-### 📋 Detailed List Cards (Clickable Device Lists)
-
-These cards show device lists with clickable links to jump directly to each entity:
+These cards show device lists with details (name, duration, area, entity ID):
 
 #### ⚠️ Warning Issues Card
 
@@ -340,7 +320,7 @@ cards:
       {% endif %}
 ```
 
-**Note:** These markdown cards require the standard Home Assistant markdown card with Jinja2 templating support (available by default in HA 2023.4+). The entity IDs are shown as text - to make them clickable, you can copy the entity ID and search for it in Developer Tools → States.
+**Note:** These cards work out-of-the-box in Home Assistant (no custom cards needed). Copy the YAML and paste it into your dashboard!
 
 ## 🔧 Configuration (Optional)
 
