@@ -131,29 +131,30 @@ entities:
   - sensor.cardio4ha_healthy_devices
 ```
 
-### Alert Card (With conditional warning):
+### Summary Card (Numbers only):
 
 ```yaml
-type: vertical-stack
-cards:
-  - type: conditional
-    conditions:
-      - entity: sensor.cardio4ha_critical_issues
-        state_not: "0"
-    card:
-      type: entities
-      title: ⚠️ CRITICAL ISSUES!
-      entities:
-        - entity: sensor.cardio4ha_critical_issues
-          name: Devices needing immediate attention
-
-  - type: entities
-    title: Device Health Summary
-    entities:
-      - sensor.cardio4ha_unavailable_devices
-      - sensor.cardio4ha_low_battery_devices
-      - sensor.cardio4ha_weak_signal_devices
-      - sensor.cardio4ha_healthy_devices
+type: entities
+title: 🏥 Device Health Summary
+entities:
+  - entity: sensor.cardio4ha_critical_issues
+    name: Critical Issues
+    icon: mdi:alert
+  - entity: sensor.cardio4ha_warning_issues
+    name: Warning Issues
+    icon: mdi:alert-outline
+  - entity: sensor.cardio4ha_unavailable_devices
+    name: Unavailable Devices
+    icon: mdi:alert-circle-outline
+  - entity: sensor.cardio4ha_low_battery_devices
+    name: Low Battery Devices
+    icon: mdi:battery-alert
+  - entity: sensor.cardio4ha_weak_signal_devices
+    name: Weak Signal Devices
+    icon: mdi:signal-off
+  - entity: sensor.cardio4ha_healthy_devices
+    name: Healthy Devices
+    icon: mdi:check-circle
 ```
 
 ### 📋 Detailed List Cards
@@ -256,32 +257,33 @@ content: |
   {% endif %}
 ```
 
-#### 🎨 Complete Dashboard Example
+#### 🎨 Complete Dashboard Example (2x2 Grid with Device Lists)
 
-Put all cards together in a grid:
+Put all 4 cards together in a grid:
 
 ```yaml
 type: grid
 columns: 2
 square: false
 cards:
+  # Card 1: Unavailable Devices
   - type: markdown
     content: |
-      ## 🔴 UNAVAILABLE DEVICES {{ states('sensor.cardio4ha_unavailable_devices') }}
-
+      ## 🔴 UNAVAILABLE {{ states('sensor.cardio4ha_unavailable_devices') }}
       {% set devices = state_attr('sensor.cardio4ha_unavailable_devices', 'devices') %}
       {% if devices %}
       {% for device in devices[:5] %}
-      - **{{ device.name }}** ({{ device.duration_human }})
+      - **{{ device.name }}**
+        _{{ device.duration_human }}_
       {% endfor %}
       {% else %}
       ✅ All available!
       {% endif %}
 
+  # Card 2: Low Battery
   - type: markdown
     content: |
       ## 🔋 LOW BATTERY {{ states('sensor.cardio4ha_low_battery_devices') }}
-
       {% set devices = state_attr('sensor.cardio4ha_low_battery_devices', 'devices') %}
       {% if devices %}
       {% for device in devices[:5] %}
@@ -291,25 +293,26 @@ cards:
       ✅ All good!
       {% endif %}
 
+  # Card 3: Warning Issues
   - type: markdown
     content: |
-      ## ⚠️ WARNING ISSUES {{ states('sensor.cardio4ha_warning_issues') }}
-
-      {% set unavail = state_attr('sensor.cardio4ha_unavailable_devices', 'devices') %}
-      {% if unavail %}
-      {% for device in unavail[:5] %}
+      ## ⚠️ WARNING {{ states('sensor.cardio4ha_warning_issues') }}
+      {% set devices = state_attr('sensor.cardio4ha_unavailable_devices', 'devices') %}
+      {% if devices %}
+      {% for device in devices[:5] %}
       {% if device.severity == 'warning' %}
-      - {{ device.name }} ({{ device.duration_human }})
+      - **{{ device.name }}**
+        _{{ device.duration_human }}_
       {% endif %}
       {% endfor %}
       {% else %}
       ✅ No warnings!
       {% endif %}
 
+  # Card 4: Weak Signal
   - type: markdown
     content: |
       ## 📡 WEAK SIGNAL {{ states('sensor.cardio4ha_weak_signal_devices') }}
-
       {% set devices = state_attr('sensor.cardio4ha_weak_signal_devices', 'devices') %}
       {% if devices %}
       {% for device in devices[:5] %}
@@ -320,7 +323,7 @@ cards:
       {% endif %}
 ```
 
-**Note:** These cards work out-of-the-box in Home Assistant (no custom cards needed). Copy the YAML and paste it into your dashboard!
+**Note:** These markdown cards use Jinja2 templates (works in HA by default). They show top 5 devices for each category with details!
 
 ## 🔧 Configuration (Optional)
 
