@@ -31,13 +31,22 @@ If you have **dozens or hundreds** of smart devices, you know the pain:
 
 ### Method 1: HACS (Recommended - EASIEST!)
 
+Since this is a custom repository, follow these steps:
+
 1. **Open HACS** in your Home Assistant
-2. Click on **"Integrations"**
-3. Click the **"+"** button in bottom right
-4. Search for **"Cardio4HA"**
-5. Click **"Download"**
-6. **Restart Home Assistant**
-7. Done! Now add the integration ⬇️
+2. Click on **"Integrations"** tab
+3. Click the **⋮** (three dots menu) in the **top right corner**
+4. Select **"Custom repositories"**
+5. **Add this repository**:
+   - **Repository**: `https://github.com/nenadjokic/Cardio4HA`
+   - **Category**: Select **"Integration"**
+   - Click **"Add"**
+6. **Close the custom repositories dialog**
+7. Click **"+ Explore & Download Repositories"** button (bottom right)
+8. **Search** for **"Cardio4HA"** or **"Device Health"**
+9. Click on **"Cardio4HA"** and then **"Download"**
+10. **Restart Home Assistant**
+11. Done! Now add the integration ⬇️
 
 ### Method 2: Manual Installation
 
