@@ -131,7 +131,7 @@ entities:
   - sensor.cardio4ha_healthy_devices
 ```
 
-### Detailed Card (With conditional alerts):
+### Alert Card (With conditional warning):
 
 ```yaml
 type: vertical-stack
@@ -141,10 +141,11 @@ cards:
       - entity: sensor.cardio4ha_critical_issues
         state_not: "0"
     card:
-      type: markdown
-      content: |
-        ## ⚠️ CRITICAL ISSUES!
-        You have **{{ states('sensor.cardio4ha_critical_issues') }}** devices needing immediate attention!
+      type: entities
+      title: ⚠️ CRITICAL ISSUES!
+      entities:
+        - entity: sensor.cardio4ha_critical_issues
+          name: Devices needing immediate attention
 
   - type: entities
     title: Device Health Summary
@@ -153,6 +154,26 @@ cards:
       - sensor.cardio4ha_low_battery_devices
       - sensor.cardio4ha_weak_signal_devices
       - sensor.cardio4ha_healthy_devices
+```
+
+### Markdown Card (With templates - requires custom card):
+
+If you have [markdown card with templates](https://github.com/custom-cards/text-element), you can use:
+
+```yaml
+type: markdown
+content: |
+  ## 🏥 Device Health Status
+
+  {% if states('sensor.cardio4ha_critical_issues') | int > 0 %}
+  ### ⚠️ {{ states('sensor.cardio4ha_critical_issues') }} Critical Issues!
+  Immediate attention required!
+  {% endif %}
+
+  - 🔴 Unavailable: **{{ states('sensor.cardio4ha_unavailable_devices') }}**
+  - 🔋 Low Battery: **{{ states('sensor.cardio4ha_low_battery_devices') }}**
+  - 📡 Weak Signal: **{{ states('sensor.cardio4ha_weak_signal_devices') }}**
+  - ✅ Healthy: **{{ states('sensor.cardio4ha_healthy_devices') }}**
 ```
 
 ## 🔧 Configuration (Optional)
