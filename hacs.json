@@ -2,7 +2,8 @@
   "name": "Cardio4HA - Device Health Monitor",
   "content_in_root": false,
   "filename": "cardio4ha",
-  "homeassistant": "2024.1.0",
   "render_readme": true,
-  "domains": ["sensor"]
+  "homeassistant": "2023.1.0",
+  "zip_release": false,
+  "hide_default_branch": true
 }
