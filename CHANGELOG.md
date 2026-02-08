@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-02-08
+
+### Changed
+- **Improved sensor naming**: All sensor names now include "Cardio4HA" prefix for easier identification in large Home Assistant installations
+  - Example: "Unavailable Devices" → "Cardio4HA Unavailable Devices"
+  - Entity IDs remain consistent: `sensor.cardio4ha_unavailable_devices`, etc.
+
+### Fixed
+- Updated README dashboard card examples with correct entity names
+- Fixed markdown card example to display actual sensor values instead of "unknown"
+- Added working template-based markdown card example
+
 ## [0.1.1] - 2026-02-08
 
 ### Fixed
@@ -43,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full async/await implementation
 - Type hints throughout codebase
 
-[Unreleased]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/nenadjokic/Cardio4HA/releases/tag/v0.1.0
