@@ -176,6 +176,172 @@ content: |
   - ✅ Healthy: **{{ states('sensor.cardio4ha_healthy_devices') }}**
 ```
 
+### 📋 Detailed List Cards (Clickable Device Lists)
+
+These cards show device lists with clickable links to jump directly to each entity:
+
+#### ⚠️ Warning Issues Card
+
+```yaml
+type: markdown
+content: |
+  ## ⚠️ WARNING ISSUES {{ states('sensor.cardio4ha_warning_issues') }}
+
+  {% set devices = state_attr('sensor.cardio4ha_unavailable_devices', 'devices') %}
+  {% if devices %}
+  {% for device in devices[:10] %}
+  {% if device.severity == 'warning' %}
+  - **{{ device.name }}** - Unavailable for {{ device.duration_human }}
+    - Entity: `{{ device.entity_id }}`
+    - Area: {{ device.area or 'Unknown' }}
+  {% endif %}
+  {% endfor %}
+  {% else %}
+  ✅ No warning issues!
+  {% endif %}
+```
+
+#### 🔴 Unavailable Devices Card
+
+```yaml
+type: markdown
+content: |
+  ## 🔴 UNAVAILABLE DEVICES {{ states('sensor.cardio4ha_unavailable_devices') }}
+
+  {% set devices = state_attr('sensor.cardio4ha_unavailable_devices', 'devices') %}
+  {% if devices %}
+  {% for device in devices[:10] %}
+  - **{{ device.name }}**
+    - Unavailable for: {{ device.duration_human }}
+    - Area: {{ device.area or 'Unknown' }}
+    - Entity: `{{ device.entity_id }}`
+  {% endfor %}
+  {% if state_attr('sensor.cardio4ha_unavailable_devices', 'count') | int > 10 %}
+
+  *... and {{ state_attr('sensor.cardio4ha_unavailable_devices', 'count') | int - 10 }} more*
+  {% endif %}
+  {% else %}
+  ✅ All devices are available!
+  {% endif %}
+```
+
+#### 🔋 Low Battery Devices Card
+
+```yaml
+type: markdown
+content: |
+  ## 🔋 LOW BATTERY DEVICES {{ states('sensor.cardio4ha_low_battery_devices') }}
+
+  {% set devices = state_attr('sensor.cardio4ha_low_battery_devices', 'devices') %}
+  {% if devices %}
+  {% for device in devices[:10] %}
+  - **{{ device.name }}** - {{ device.battery_level }}%
+    - Area: {{ device.area or 'Unknown' }}
+    - Entity: `{{ device.entity_id }}`
+  {% endfor %}
+  {% if state_attr('sensor.cardio4ha_low_battery_devices', 'count') | int > 10 %}
+
+  *... and {{ state_attr('sensor.cardio4ha_low_battery_devices', 'count') | int - 10 }} more*
+  {% endif %}
+  {% else %}
+  ✅ All batteries are good!
+  {% endif %}
+```
+
+#### 📡 Weak Signal Devices Card
+
+```yaml
+type: markdown
+content: |
+  ## 📡 WEAK SIGNAL DEVICES {{ states('sensor.cardio4ha_weak_signal_devices') }}
+
+  {% set devices = state_attr('sensor.cardio4ha_weak_signal_devices', 'devices') %}
+  {% if devices %}
+  {% for device in devices[:10] %}
+  - **{{ device.name }}**
+    {% if device.signal_type == 'zigbee' %}
+    - Zigbee LQI: {{ device.linkquality }}
+    {% elif device.signal_type == 'wifi' %}
+    - WiFi RSSI: {{ device.rssi }} dBm
+    {% endif %}
+    - Area: {{ device.area or 'Unknown' }}
+    - Entity: `{{ device.entity_id }}`
+  {% endfor %}
+  {% if state_attr('sensor.cardio4ha_weak_signal_devices', 'count') | int > 10 %}
+
+  *... and {{ state_attr('sensor.cardio4ha_weak_signal_devices', 'count') | int - 10 }} more*
+  {% endif %}
+  {% else %}
+  ✅ All signals are strong!
+  {% endif %}
+```
+
+#### 🎨 Complete Dashboard Example
+
+Put all cards together in a grid:
+
+```yaml
+type: grid
+columns: 2
+square: false
+cards:
+  - type: markdown
+    content: |
+      ## 🔴 UNAVAILABLE DEVICES {{ states('sensor.cardio4ha_unavailable_devices') }}
+
+      {% set devices = state_attr('sensor.cardio4ha_unavailable_devices', 'devices') %}
+      {% if devices %}
+      {% for device in devices[:5] %}
+      - **{{ device.name }}** ({{ device.duration_human }})
+      {% endfor %}
+      {% else %}
+      ✅ All available!
+      {% endif %}
+
+  - type: markdown
+    content: |
+      ## 🔋 LOW BATTERY {{ states('sensor.cardio4ha_low_battery_devices') }}
+
+      {% set devices = state_attr('sensor.cardio4ha_low_battery_devices', 'devices') %}
+      {% if devices %}
+      {% for device in devices[:5] %}
+      - **{{ device.name }}** - {{ device.battery_level }}%
+      {% endfor %}
+      {% else %}
+      ✅ All good!
+      {% endif %}
+
+  - type: markdown
+    content: |
+      ## ⚠️ WARNING ISSUES {{ states('sensor.cardio4ha_warning_issues') }}
+
+      {% set unavail = state_attr('sensor.cardio4ha_unavailable_devices', 'devices') %}
+      {% if unavail %}
+      {% for device in unavail[:5] %}
+      {% if device.severity == 'warning' %}
+      - {{ device.name }} ({{ device.duration_human }})
+      {% endif %}
+      {% endfor %}
+      {% else %}
+      ✅ No warnings!
+      {% endif %}
+
+  - type: markdown
+    content: |
+      ## 📡 WEAK SIGNAL {{ states('sensor.cardio4ha_weak_signal_devices') }}
+
+      {% set devices = state_attr('sensor.cardio4ha_weak_signal_devices', 'devices') %}
+      {% if devices %}
+      {% for device in devices[:5] %}
+      - **{{ device.name }}**
+      {% endfor %}
+      {% else %}
+      ✅ All strong!
+      {% endif %}
+```
+
+**Note:** These markdown cards require the standard Home Assistant markdown card with Jinja2 templating support (available by default in HA 2023.4+). The entity IDs are shown as text - to make them clickable, you can copy the entity ID and search for it in Developer Tools → States.
+
 ## 🔧 Configuration (Optional)
 
 Want to customize thresholds? Easy!
