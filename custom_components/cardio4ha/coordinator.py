@@ -10,6 +10,9 @@ from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
@@ -208,8 +211,9 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
             weak_signal_devices = []
 
             # Scan all entities
-            entity_registry = self.hass.helpers.entity_registry.async_get(self.hass)
-            device_registry = self.hass.helpers.device_registry.async_get(self.hass)
+            entity_registry = er.async_get(self.hass)
+            device_registry = dr.async_get(self.hass)
+            area_registry = ar.async_get(self.hass)
 
             for entity_id in self.hass.states.async_entity_ids():
                 state = self.hass.states.get(entity_id)
@@ -238,7 +242,6 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                     if device_entry:
                         device_name = device_entry.name_by_user or device_entry.name
                         if device_entry.area_id:
-                            area_registry = self.hass.helpers.area_registry.async_get(self.hass)
                             area_entry = area_registry.async_get_area(device_entry.area_id)
                             if area_entry:
                                 area_name = area_entry.name
