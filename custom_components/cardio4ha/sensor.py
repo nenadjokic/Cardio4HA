@@ -53,24 +53,31 @@ class Cardio4HASensor(CoordinatorEntity, SensorEntity):
         # Set sensor properties based on type
         if sensor_type == SENSOR_UNAVAILABLE_COUNT:
             self._attr_name = "Cardio4HA Unavailable Devices"
+            self._attr_object_id = "cardio4ha_unavailable_devices"
             self._attr_icon = "mdi:alert-circle-outline"
         elif sensor_type == SENSOR_LOW_BATTERY_COUNT:
             self._attr_name = "Cardio4HA Low Battery Devices"
+            self._attr_object_id = "cardio4ha_low_battery_devices"
             self._attr_icon = "mdi:battery-alert"
         elif sensor_type == SENSOR_WEAK_SIGNAL_COUNT:
             self._attr_name = "Cardio4HA Weak Signal Devices"
+            self._attr_object_id = "cardio4ha_weak_signal_devices"
             self._attr_icon = "mdi:signal-off"
         elif sensor_type == SENSOR_CRITICAL_COUNT:
             self._attr_name = "Cardio4HA Critical Issues"
+            self._attr_object_id = "cardio4ha_critical_issues"
             self._attr_icon = "mdi:alert"
         elif sensor_type == SENSOR_WARNING_COUNT:
             self._attr_name = "Cardio4HA Warning Issues"
+            self._attr_object_id = "cardio4ha_warning_issues"
             self._attr_icon = "mdi:alert-outline"
         elif sensor_type == SENSOR_HEALTHY_COUNT:
             self._attr_name = "Cardio4HA Healthy Devices"
+            self._attr_object_id = "cardio4ha_healthy_devices"
             self._attr_icon = "mdi:check-circle"
         elif sensor_type == SENSOR_LAST_SCAN_DURATION:
             self._attr_name = "Cardio4HA Last Scan Duration"
+            self._attr_object_id = "cardio4ha_last_scan_duration"
             self._attr_icon = "mdi:timer-outline"
             self._attr_native_unit_of_measurement = "s"
             self._attr_state_class = SensorStateClass.MEASUREMENT
