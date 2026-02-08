@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-02-08
+
+### Fixed
+- **Smart unavailable detection**: Device is now only marked as unavailable if ALL its entities are unavailable
+  - Example: If iPad has 10 sensors and 9 are unavailable but 1 is available, iPad is NOT marked as unavailable
+  - This prevents false positives where a device appears unavailable when it's actually functioning
+  - Greatly improves accuracy of unavailable device tracking
+- **Filter out Cardio4HA's own sensors**: Integration now excludes its own sensors from all tracking categories
+  - Fixes bug where "Cardio4HA - 9.0%" appeared in low battery devices
+  - Prevents self-tracking circular references
+
+### Technical Details
+- Implemented two-pass device entity counting algorithm
+- Added device_entity_counts tracking structure to count total vs unavailable entities per device
+- Added integration platform filtering to exclude DOMAIN sensors
+
 ## [0.1.5] - 2026-02-08
 
 ### Changed
@@ -92,7 +108,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full async/await implementation
 - Type hints throughout codebase
 
-[Unreleased]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.2...v0.1.3

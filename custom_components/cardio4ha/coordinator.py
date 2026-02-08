@@ -211,9 +211,11 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
             weak_signal_devices = []
 
             # Track devices we've already processed (to avoid duplicates)
-            unavailable_device_ids = set()
             low_battery_device_ids = set()
             weak_signal_device_ids = set()
+
+            # Track device entity counts for smarter unavailable detection
+            device_entity_counts = {}  # device_id -> {"total": int, "unavailable": int, "entities": []}
 
             # Scan all entities
             entity_registry = er.async_get(self.hass)
@@ -234,6 +236,10 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                 # Get entity registry entry
                 entity_entry = entity_registry.async_get(entity_id)
 
+                # SKIP CARDIO4HA's OWN SENSORS!
+                if entity_entry and entity_entry.platform == DOMAIN:
+                    continue
+
                 # Skip disabled entities unless configured to include them
                 if entity_entry and entity_entry.disabled and not include_disabled:
                     continue
@@ -241,6 +247,7 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                 # Get device and area information
                 device_name = None
                 area_name = None
+                device_id = entity_entry.device_id if entity_entry else None
 
                 if entity_entry and entity_entry.device_id:
                     device_entry = device_registry.async_get(entity_entry.device_id)
@@ -251,8 +258,33 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                             if area_entry:
                                 area_name = area_entry.name
 
-                # 1. CHECK UNAVAILABLE STATUS
-                if state.state in UNAVAILABLE_STATES:
+                # 1. TRACK DEVICE ENTITY COUNTS (for smarter unavailable detection)
+                if device_id:
+                    # Initialize device tracking if not exists
+                    if device_id not in device_entity_counts:
+                        device_entity_counts[device_id] = {
+                            "total": 0,
+                            "unavailable": 0,
+                            "device_name": device_name,
+                            "area_name": area_name,
+                            "entities": [],
+                        }
+
+                    # Increment total count
+                    device_entity_counts[device_id]["total"] += 1
+
+                    # Check if unavailable
+                    if state.state in UNAVAILABLE_STATES:
+                        device_entity_counts[device_id]["unavailable"] += 1
+                        device_entity_counts[device_id]["entities"].append({
+                            "entity_id": entity_id,
+                            "name": state.name or entity_id,
+                            "domain": domain,
+                            "state": state.state,
+                        })
+
+                # 2. TRACK STANDALONE ENTITIES (no device_id)
+                if not device_id and state.state in UNAVAILABLE_STATES:
                     now = dt_util.utcnow()
 
                     # Track when it became unavailable
@@ -277,44 +309,22 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                     else:
                         severity = SEVERITY_LOW
 
-                    # DEVICE-LEVEL TRACKING: Only add if device not already tracked
-                    device_id = entity_entry.device_id if entity_entry else None
-
-                    # If entity has a device, only track once per device
-                    if device_id:
-                        if device_id not in unavailable_device_ids:
-                            unavailable_device_ids.add(device_id)
-                            unavailable_devices.append({
-                                "entity_id": entity_id,
-                                "name": device_name or state.name or entity_id,
-                                "domain": domain,
-                                "area": area_name,
-                                "device": device_name,
-                                "device_id": device_id,
-                                "since": since,
-                                "duration_seconds": duration_seconds,
-                                "duration_human": self._format_duration(duration),
-                                "last_seen": since,
-                                "severity": severity,
-                                "integration": entity_entry.platform if entity_entry else "unknown",
-                            })
-                    else:
-                        # No device - track entity directly (standalone entities)
-                        unavailable_devices.append({
-                            "entity_id": entity_id,
-                            "name": state.name or entity_id,
-                            "domain": domain,
-                            "area": area_name,
-                            "device": device_name,
-                            "device_id": None,
-                            "since": since,
-                            "duration_seconds": duration_seconds,
-                            "duration_human": self._format_duration(duration),
-                            "last_seen": since,
-                            "severity": severity,
-                            "integration": entity_entry.platform if entity_entry else "unknown",
-                        })
-                else:
+                    # Add standalone entity to unavailable list
+                    unavailable_devices.append({
+                        "entity_id": entity_id,
+                        "name": state.name or entity_id,
+                        "domain": domain,
+                        "area": area_name,
+                        "device": device_name,
+                        "device_id": None,
+                        "since": since,
+                        "duration_seconds": duration_seconds,
+                        "duration_human": self._format_duration(duration),
+                        "last_seen": since,
+                        "severity": severity,
+                        "integration": entity_entry.platform if entity_entry else "unknown",
+                    })
+                elif not device_id:
                     # Remove from tracking if it's back online
                     self.unavailable_tracking.pop(entity_id, None)
 
@@ -439,6 +449,61 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                                 })
                     except (ValueError, TypeError):
                         pass
+
+            # PROCESS DEVICE-LEVEL UNAVAILABILITY
+            # Only mark a device as unavailable if ALL its entities are unavailable
+            now = dt_util.utcnow()
+            for device_id, device_info in device_entity_counts.items():
+                if device_info["unavailable"] == device_info["total"] and device_info["unavailable"] > 0:
+                    # ALL entities from this device are unavailable!
+                    # Find the first unavailable entity to get timing info
+                    first_entity = device_info["entities"][0] if device_info["entities"] else None
+                    if first_entity:
+                        entity_id = first_entity["entity_id"]
+
+                        # Track when it became unavailable
+                        if entity_id not in self.unavailable_tracking:
+                            self.unavailable_tracking[entity_id] = {
+                                "since": now,
+                                "entity_id": entity_id,
+                                "name": first_entity["name"],
+                                "domain": first_entity["domain"],
+                            }
+
+                        # Calculate duration
+                        since = self.unavailable_tracking[entity_id]["since"]
+                        duration = now - since
+                        duration_seconds = duration.total_seconds()
+
+                        # Determine severity
+                        if duration_seconds >= unavailable_critical:
+                            severity = SEVERITY_CRITICAL
+                        elif duration_seconds >= unavailable_warning:
+                            severity = SEVERITY_WARNING
+                        else:
+                            severity = SEVERITY_LOW
+
+                        # Add device to unavailable list
+                        unavailable_devices.append({
+                            "entity_id": entity_id,
+                            "name": device_info["device_name"] or first_entity["name"],
+                            "domain": first_entity["domain"],
+                            "area": device_info["area_name"],
+                            "device": device_info["device_name"],
+                            "device_id": device_id,
+                            "since": since,
+                            "duration_seconds": duration_seconds,
+                            "duration_human": self._format_duration(duration),
+                            "last_seen": since,
+                            "severity": severity,
+                            "integration": "multiple",
+                            "unavailable_count": device_info["unavailable"],
+                            "total_count": device_info["total"],
+                        })
+                else:
+                    # Device has at least one available entity - remove from tracking
+                    for entity_info in device_info["entities"]:
+                        self.unavailable_tracking.pop(entity_info["entity_id"], None)
 
             # Sort results
             unavailable_devices.sort(key=lambda x: x["duration_seconds"], reverse=True)
