@@ -4,7 +4,7 @@ from datetime import timedelta
 DOMAIN = "cardio4ha"
 NAME = "Cardio4HA"
 
-# Configuration
+# Configuration - Basic
 CONF_UPDATE_INTERVAL = "update_interval"
 CONF_BATTERY_CRITICAL = "battery_critical"
 CONF_BATTERY_WARNING = "battery_warning"
@@ -16,6 +16,12 @@ CONF_UNAVAILABLE_CRITICAL = "unavailable_critical"
 CONF_EXCLUDE_DOMAINS = "exclude_domains"
 CONF_EXCLUDE_ENTITIES = "exclude_entities"
 CONF_INCLUDE_DISABLED = "include_disabled"
+
+# Configuration - Phase 2: Advanced Exclusions
+CONF_EXCLUDE_ENTITY_WILDCARDS = "exclude_entity_wildcards"  # List of wildcard patterns
+CONF_EXCLUDE_INTEGRATIONS = "exclude_integrations"  # List of integration platforms to exclude
+CONF_EXCLUDE_AREAS = "exclude_areas"  # List of area names to exclude
+CONF_MONITOR_ZIGBEE2MQTT = "monitor_zigbee2mqtt"  # Override to always monitor Zigbee2MQTT despite exclusions
 
 # Defaults
 DEFAULT_UPDATE_INTERVAL = 60
@@ -29,6 +35,12 @@ DEFAULT_UNAVAILABLE_CRITICAL = 21600  # 6 hours
 DEFAULT_EXCLUDE_DOMAINS = ["sun", "weather", "updater"]
 DEFAULT_EXCLUDE_ENTITIES = []
 DEFAULT_INCLUDE_DISABLED = False
+
+# Phase 2 Defaults
+DEFAULT_EXCLUDE_ENTITY_WILDCARDS = []
+DEFAULT_EXCLUDE_INTEGRATIONS = []
+DEFAULT_EXCLUDE_AREAS = []
+DEFAULT_MONITOR_ZIGBEE2MQTT = True  # Always monitor Zigbee2MQTT by default
 
 # Sensor types
 SENSOR_UNAVAILABLE_COUNT = "unavailable_count"

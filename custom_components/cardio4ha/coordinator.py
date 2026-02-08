@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, timedelta
+import fnmatch
 import logging
 from typing import Any
 
@@ -31,6 +32,10 @@ from .const import (
     CONF_EXCLUDE_DOMAINS,
     CONF_EXCLUDE_ENTITIES,
     CONF_INCLUDE_DISABLED,
+    CONF_EXCLUDE_ENTITY_WILDCARDS,
+    CONF_EXCLUDE_INTEGRATIONS,
+    CONF_EXCLUDE_AREAS,
+    CONF_MONITOR_ZIGBEE2MQTT,
     DEFAULT_BATTERY_CRITICAL,
     DEFAULT_BATTERY_WARNING,
     DEFAULT_BATTERY_LOW,
@@ -41,6 +46,10 @@ from .const import (
     DEFAULT_EXCLUDE_DOMAINS,
     DEFAULT_EXCLUDE_ENTITIES,
     DEFAULT_INCLUDE_DISABLED,
+    DEFAULT_EXCLUDE_ENTITY_WILDCARDS,
+    DEFAULT_EXCLUDE_INTEGRATIONS,
+    DEFAULT_EXCLUDE_AREAS,
+    DEFAULT_MONITOR_ZIGBEE2MQTT,
     UNAVAILABLE_STATES,
     BATTERY_KEYWORDS,
     SEVERITY_CRITICAL,
@@ -160,21 +169,51 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                 return SEVERITY_WARNING
         return SEVERITY_LOW
 
-    def _should_exclude_entity(self, entity_id: str, domain: str) -> bool:
+    def _should_exclude_entity(
+        self,
+        entity_id: str,
+        domain: str,
+        entity_entry: er.RegistryEntry | None = None,
+        area_name: str | None = None,
+    ) -> bool:
         """Check if entity should be excluded."""
+        # PHASE 2: Zigbee2MQTT Override - Always monitor Zigbee2MQTT if enabled
+        monitor_z2m = self._get_config_value(CONF_MONITOR_ZIGBEE2MQTT, DEFAULT_MONITOR_ZIGBEE2MQTT)
+        if monitor_z2m and entity_entry and entity_entry.platform == "mqtt":
+            # Check if it's a Zigbee2MQTT entity (common patterns)
+            if any(z2m in entity_id.lower() for z2m in ["zigbee", "z2m", "0x"]):
+                return False
+
+        # Get exclusion configuration
         exclude_domains = self._get_config_value(CONF_EXCLUDE_DOMAINS, DEFAULT_EXCLUDE_DOMAINS)
         exclude_entities = self._get_config_value(CONF_EXCLUDE_ENTITIES, DEFAULT_EXCLUDE_ENTITIES)
+        exclude_wildcards = self._get_config_value(CONF_EXCLUDE_ENTITY_WILDCARDS, DEFAULT_EXCLUDE_ENTITY_WILDCARDS)
+        exclude_integrations = self._get_config_value(CONF_EXCLUDE_INTEGRATIONS, DEFAULT_EXCLUDE_INTEGRATIONS)
+        exclude_areas = self._get_config_value(CONF_EXCLUDE_AREAS, DEFAULT_EXCLUDE_AREAS)
 
         # Check domain exclusion
         if domain in exclude_domains:
             return True
 
-        # Check entity pattern exclusion
+        # PHASE 2: Check integration exclusion
+        if entity_entry and entity_entry.platform and entity_entry.platform in exclude_integrations:
+            return True
+
+        # PHASE 2: Check area exclusion
+        if area_name and area_name in exclude_areas:
+            return True
+
+        # Check entity pattern exclusion (legacy - backward compatible)
         for pattern in exclude_entities:
             if pattern.endswith("*"):
                 if entity_id.startswith(pattern[:-1]):
                     return True
             elif entity_id == pattern:
+                return True
+
+        # PHASE 2: Check wildcard pattern exclusion
+        for pattern in exclude_wildcards:
+            if fnmatch.fnmatch(entity_id, pattern):
                 return True
 
         return False
@@ -229,10 +268,6 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
 
                 domain = entity_id.split(".")[0]
 
-                # Skip excluded entities
-                if self._should_exclude_entity(entity_id, domain):
-                    continue
-
                 # Get entity registry entry
                 entity_entry = entity_registry.async_get(entity_id)
 
@@ -257,6 +292,10 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                             area_entry = area_registry.async_get_area(device_entry.area_id)
                             if area_entry:
                                 area_name = area_entry.name
+
+                # Skip excluded entities (checked after getting area info for Phase 2 exclusions)
+                if self._should_exclude_entity(entity_id, domain, entity_entry, area_name):
+                    continue
 
                 # 1. TRACK DEVICE ENTITY COUNTS (for smarter unavailable detection)
                 if device_id:

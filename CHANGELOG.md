@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-02-08
+
+### Added
+- **Phase 2: Advanced Exclusion System**
+  - **Wildcard pattern exclusions**: Visual UI to add wildcard patterns for entity exclusion (e.g., `sensor.temp_*`, `*_battery`)
+  - **Integration-based exclusions**: Multi-select to exclude entire integrations/platforms from monitoring
+  - **Area-based exclusions**: Multi-select to exclude all entities in specific areas
+  - **Zigbee2MQTT Override**: Special toggle to always monitor Zigbee2MQTT entities (enabled by default)
+    - Even if excluded by other rules, Zigbee2MQTT entities will be monitored since they commonly lose signals in practice
+- **Customizable Thresholds per Category**
+  - **Signal strength thresholds**: Separate configuration for Zigbee linkquality and WiFi RSSI warnings
+  - **Unavailable duration thresholds**: Configure both warning and critical thresholds for unavailable devices
+  - All thresholds now configurable in Options UI
+
+### Improved
+- Enhanced configuration UI with organized settings sections
+- Better wildcard matching using fnmatch for more flexible patterns
+- Smarter exclusion logic that respects Zigbee2MQTT override
+
+### Technical Details
+- Added fnmatch support for advanced wildcard pattern matching
+- Extended config_flow with multi-select dropdowns for integrations and areas
+- Dynamically populated integration and area lists from entity/area registries
+- Exclusion evaluation order: Zigbee2MQTT override → domain → integration → area → wildcards
+
 ## [0.1.6] - 2026-02-08
 
 ### Fixed
@@ -108,7 +133,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full async/await implementation
 - Type hints throughout codebase
 
-[Unreleased]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.3...v0.1.4
