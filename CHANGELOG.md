@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-02-08
+
+### Fixed
+- **Critical bug fix**: Corrected registry access to use proper imports (`er.async_get()`, `dr.async_get()`, `ar.async_get()`) instead of `self.hass.helpers.entity_registry.async_get()` which was causing `'HomeAssistant' object has no attribute 'helpers'` error on integration setup
+- Fixed "Config flow could not be loaded: 500 Internal Server Error" during integration installation
+
 ## [0.1.0] - 2026-02-08
 
 ### Added
@@ -37,5 +43,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full async/await implementation
 - Type hints throughout codebase
 
-[Unreleased]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/nenadjokic/Cardio4HA/releases/tag/v0.1.0
