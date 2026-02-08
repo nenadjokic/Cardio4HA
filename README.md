@@ -251,9 +251,14 @@ Found a bug? Have an idea?
 
 MIT License - Free and open source!
 
-## 🙏 Support
+## 🙏 Support the Project
 
-If you find this helpful, give it a ⭐ on GitHub!
+If you find Cardio4HA helpful, consider supporting its development:
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/nenadjokic)
+[![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/nenadjokicRS)
+
+⭐ **Star this repo** on GitHub if you find it useful!
 
 ---
 
