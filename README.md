@@ -326,21 +326,55 @@ cards:
 
 **Note:** These markdown cards use Jinja2 templates (works in HA by default). They show top 5 devices for each category with details!
 
+📋 **Want clickable entities and better formatting?** Check out [dashboard-examples.md](dashboard-examples.md) for improved dashboard cards with clickable entity links!
+
 ## 🔧 Configuration (Optional)
 
-Want to customize thresholds? Easy!
+Want to customize thresholds or exclude devices? Easy!
 
 1. Go to **Settings** → **Devices & Services**
 2. Find **Cardio4HA**
 3. Click **"Configure"**
 4. Adjust these settings:
 
+### Basic Settings
+
 | Setting | What It Does | Default |
 |---------|--------------|---------|
 | **Update Interval** | How often to scan (seconds) | 60 |
+
+### Battery Thresholds
+
+| Setting | What It Does | Default |
+|---------|--------------|---------|
 | **Battery Critical** | Level considered critical (%) | 15 |
 | **Battery Warning** | Level considered warning (%) | 30 |
 | **Battery Low** | Level considered low (%) | 50 |
+
+### Signal Thresholds
+
+| Setting | What It Does | Default |
+|---------|--------------|---------|
+| **Link Quality Warning** | Zigbee LQI threshold | 100 |
+| **RSSI Warning** | WiFi signal threshold (dBm) | -70 |
+
+### Unavailable Thresholds
+
+| Setting | What It Does | Default |
+|---------|--------------|---------|
+| **Unavailable Warning** | Duration before warning (seconds) | 3600 (1 hour) |
+| **Unavailable Critical** | Duration before critical (seconds) | 21600 (6 hours) |
+
+### Advanced Exclusions
+
+| Setting | What It Does | Example |
+|---------|--------------|---------|
+| **Exclude Entity Wildcards** | Comma-separated wildcard patterns to exclude | `sensor.temp_*, *_battery` |
+| **Exclude Integrations** | Integration platforms to exclude from monitoring | Select from list (e.g., `sun`, `updater`) |
+| **Exclude Areas** | Areas to exclude from monitoring | Select from list (e.g., `Garage`, `Basement`) |
+| **Monitor Zigbee2MQTT** | Always monitor Z2M entities (even if excluded) | ✅ Enabled (recommended) |
+
+**Tip:** Zigbee2MQTT override is enabled by default because Z2M devices often lose signals in practice!
 
 ## 🔔 Create Automations
 
@@ -384,7 +418,11 @@ Check the `sensor.cardio4ha_last_scan_duration` to see how fast your system runs
 **A:** Your unavailable device history is **saved** and restored automatically. You won't lose tracking data!
 
 ### Q: Can I exclude certain devices?
-**A:** Yes! (Advanced feature coming in Phase 2) For now, it automatically excludes `sun`, `weather`, and `updater` domains.
+**A:** Yes! Use the advanced exclusion system in Configuration. You can exclude by:
+- **Wildcard patterns** (e.g., `sensor.temp_*`)
+- **Integrations** (e.g., exclude all `sun` or `weather` entities)
+- **Areas** (e.g., exclude all devices in "Garage")
+- Plus, Zigbee2MQTT entities are always monitored by default (override option available)
 
 ### Q: How do I see which specific devices have issues?
 **A:** Look at the sensor **attributes** in Developer Tools → States, or wait for the custom Lovelace card (coming soon!).
@@ -413,11 +451,15 @@ Check the `sensor.cardio4ha_last_scan_duration` to see how fast your system runs
 - Battery monitoring
 - Signal detection
 - Persistence across restarts
+- Device-level tracking (no clutter!)
+- Smart unavailable detection
 
-### 🔄 Phase 2 - Enhanced Configuration (In Progress)
-- Advanced exclusion rules
-- Per-area monitoring
-- Custom thresholds per device type
+### ✅ Phase 2 - Enhanced Configuration (DONE!)
+- Advanced exclusion rules (wildcards, integrations, areas)
+- Zigbee2MQTT override for reliability
+- Custom thresholds for batteries, signals, and unavailable durations
+- Visual configuration UI with multi-select dropdowns
+- Clickable dashboard entity links
 
 ### 📱 Phase 3 - Custom UI Card (Planned)
 - Beautiful Lovelace card
