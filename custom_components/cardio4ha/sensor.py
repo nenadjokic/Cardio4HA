@@ -57,7 +57,7 @@ class Cardio4HASensor(CoordinatorEntity, SensorEntity):
             "name": "Cardio4HA",
             "manufacturer": "Cardio4HA",
             "model": "Device Health Monitor",
-            "sw_version": "0.1.3",
+            "sw_version": "0.1.5",
         }
 
         # Set sensor properties based on type

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-02-08
+
+### Changed
+- **MAJOR: Device-level tracking instead of sensor-level tracking**
+  - Now tracks devices, not individual sensors
+  - When a device has multiple sensors (e.g., iPad with 10+ sensors), only the device appears once in unavailable/battery/signal lists
+  - Significantly reduces clutter and makes monitoring more intuitive
+  - Example: Instead of showing "iPad sensor 1", "iPad sensor 2", etc., now shows just "iPad"
+  - Applies to all categories: unavailable devices, low battery, and weak signal
+  - Standalone entities (without parent devices) are still tracked individually
+
+### Technical Details
+- Added device deduplication using `device_id` tracking sets
+- Prioritizes device name over sensor name when displaying results
+- Maintains backward compatibility for entities without associated devices
+
 ## [0.1.4] - 2026-02-08
 
 ### Fixed
@@ -76,7 +92,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full async/await implementation
 - Type hints throughout codebase
 
-[Unreleased]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/nenadjokic/Cardio4HA/compare/v0.1.1...v0.1.2

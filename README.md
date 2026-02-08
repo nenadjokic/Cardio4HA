@@ -23,6 +23,7 @@ If you have **dozens or hundreds** of smart devices, you know the pain:
 ✅ **Tracks Unavailable Devices** - Shows which devices are offline and for how long
 ✅ **Monitors Battery Levels** - Lists all low batteries sorted from worst to best
 ✅ **Detects Weak Signals** - Finds Zigbee & WiFi devices with poor connectivity
+✅ **Device-Level Tracking** - Shows devices, not individual sensors (no clutter!)
 ✅ **Remembers History** - Tracks how long devices have been unavailable (survives HA restarts!)
 ✅ **Works Automatically** - No manual configuration needed, just install and go!
 ✅ **Fast Performance** - Scans 200+ devices in seconds

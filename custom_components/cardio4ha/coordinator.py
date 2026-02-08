@@ -210,6 +210,11 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
             low_battery_devices = []
             weak_signal_devices = []
 
+            # Track devices we've already processed (to avoid duplicates)
+            unavailable_device_ids = set()
+            low_battery_device_ids = set()
+            weak_signal_device_ids = set()
+
             # Scan all entities
             entity_registry = er.async_get(self.hass)
             device_registry = dr.async_get(self.hass)
@@ -272,19 +277,43 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                     else:
                         severity = SEVERITY_LOW
 
-                    unavailable_devices.append({
-                        "entity_id": entity_id,
-                        "name": state.name or entity_id,
-                        "domain": domain,
-                        "area": area_name,
-                        "device": device_name,
-                        "since": since,
-                        "duration_seconds": duration_seconds,
-                        "duration_human": self._format_duration(duration),
-                        "last_seen": since,
-                        "severity": severity,
-                        "integration": entity_entry.platform if entity_entry else "unknown",
-                    })
+                    # DEVICE-LEVEL TRACKING: Only add if device not already tracked
+                    device_id = entity_entry.device_id if entity_entry else None
+
+                    # If entity has a device, only track once per device
+                    if device_id:
+                        if device_id not in unavailable_device_ids:
+                            unavailable_device_ids.add(device_id)
+                            unavailable_devices.append({
+                                "entity_id": entity_id,
+                                "name": device_name or state.name or entity_id,
+                                "domain": domain,
+                                "area": area_name,
+                                "device": device_name,
+                                "device_id": device_id,
+                                "since": since,
+                                "duration_seconds": duration_seconds,
+                                "duration_human": self._format_duration(duration),
+                                "last_seen": since,
+                                "severity": severity,
+                                "integration": entity_entry.platform if entity_entry else "unknown",
+                            })
+                    else:
+                        # No device - track entity directly (standalone entities)
+                        unavailable_devices.append({
+                            "entity_id": entity_id,
+                            "name": state.name or entity_id,
+                            "domain": domain,
+                            "area": area_name,
+                            "device": device_name,
+                            "device_id": None,
+                            "since": since,
+                            "duration_seconds": duration_seconds,
+                            "duration_human": self._format_duration(duration),
+                            "last_seen": since,
+                            "severity": severity,
+                            "integration": entity_entry.platform if entity_entry else "unknown",
+                        })
                 else:
                     # Remove from tracking if it's back online
                     self.unavailable_tracking.pop(entity_id, None)
@@ -297,15 +326,36 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                             severity = self._get_battery_severity(
                                 battery_level, battery_critical, battery_warning, battery_low
                             )
-                            low_battery_devices.append({
-                                "entity_id": entity_id,
-                                "name": state.name or entity_id,
-                                "battery_level": battery_level,
-                                "severity": severity,
-                                "area": area_name,
-                                "device": device_name,
-                                "last_updated": state.last_updated,
-                            })
+
+                            # DEVICE-LEVEL TRACKING: Only add if device not already tracked
+                            device_id = entity_entry.device_id if entity_entry else None
+
+                            # If entity has a device, only track once per device
+                            if device_id:
+                                if device_id not in low_battery_device_ids:
+                                    low_battery_device_ids.add(device_id)
+                                    low_battery_devices.append({
+                                        "entity_id": entity_id,
+                                        "name": device_name or state.name or entity_id,
+                                        "battery_level": battery_level,
+                                        "severity": severity,
+                                        "area": area_name,
+                                        "device": device_name,
+                                        "device_id": device_id,
+                                        "last_updated": state.last_updated,
+                                    })
+                            else:
+                                # No device - track entity directly
+                                low_battery_devices.append({
+                                    "entity_id": entity_id,
+                                    "name": state.name or entity_id,
+                                    "battery_level": battery_level,
+                                    "severity": severity,
+                                    "area": area_name,
+                                    "device": device_name,
+                                    "device_id": None,
+                                    "last_updated": state.last_updated,
+                                })
                     except (ValueError, TypeError):
                         pass
 
@@ -317,16 +367,36 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                         lqi = float(linkquality)
                         if lqi < linkquality_warning:
                             severity = self._get_signal_severity(SIGNAL_TYPE_ZIGBEE, lqi, linkquality_warning)
-                            weak_signal_devices.append({
-                                "entity_id": entity_id,
-                                "name": state.name or entity_id,
-                                "signal_type": SIGNAL_TYPE_ZIGBEE,
-                                "linkquality": lqi,
-                                "rssi": None,
-                                "severity": severity,
-                                "area": area_name,
-                                "device": device_name,
-                            })
+
+                            # DEVICE-LEVEL TRACKING: Only add if device not already tracked
+                            device_id = entity_entry.device_id if entity_entry else None
+
+                            if device_id:
+                                if device_id not in weak_signal_device_ids:
+                                    weak_signal_device_ids.add(device_id)
+                                    weak_signal_devices.append({
+                                        "entity_id": entity_id,
+                                        "name": device_name or state.name or entity_id,
+                                        "signal_type": SIGNAL_TYPE_ZIGBEE,
+                                        "linkquality": lqi,
+                                        "rssi": None,
+                                        "severity": severity,
+                                        "area": area_name,
+                                        "device": device_name,
+                                        "device_id": device_id,
+                                    })
+                            else:
+                                weak_signal_devices.append({
+                                    "entity_id": entity_id,
+                                    "name": state.name or entity_id,
+                                    "signal_type": SIGNAL_TYPE_ZIGBEE,
+                                    "linkquality": lqi,
+                                    "rssi": None,
+                                    "severity": severity,
+                                    "area": area_name,
+                                    "device": device_name,
+                                    "device_id": None,
+                                })
                     except (ValueError, TypeError):
                         pass
 
@@ -337,16 +407,36 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                         rssi_value = float(rssi)
                         if rssi_value < rssi_warning:
                             severity = self._get_signal_severity(SIGNAL_TYPE_WIFI, rssi_value, rssi_warning)
-                            weak_signal_devices.append({
-                                "entity_id": entity_id,
-                                "name": state.name or entity_id,
-                                "signal_type": SIGNAL_TYPE_WIFI,
-                                "linkquality": None,
-                                "rssi": rssi_value,
-                                "severity": severity,
-                                "area": area_name,
-                                "device": device_name,
-                            })
+
+                            # DEVICE-LEVEL TRACKING: Only add if device not already tracked
+                            device_id = entity_entry.device_id if entity_entry else None
+
+                            if device_id:
+                                if device_id not in weak_signal_device_ids:
+                                    weak_signal_device_ids.add(device_id)
+                                    weak_signal_devices.append({
+                                        "entity_id": entity_id,
+                                        "name": device_name or state.name or entity_id,
+                                        "signal_type": SIGNAL_TYPE_WIFI,
+                                        "linkquality": None,
+                                        "rssi": rssi_value,
+                                        "severity": severity,
+                                        "area": area_name,
+                                        "device": device_name,
+                                        "device_id": device_id,
+                                    })
+                            else:
+                                weak_signal_devices.append({
+                                    "entity_id": entity_id,
+                                    "name": state.name or entity_id,
+                                    "signal_type": SIGNAL_TYPE_WIFI,
+                                    "linkquality": None,
+                                    "rssi": rssi_value,
+                                    "severity": severity,
+                                    "area": area_name,
+                                    "device": device_name,
+                                    "device_id": None,
+                                })
                     except (ValueError, TypeError):
                         pass
 
