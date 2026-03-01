@@ -47,7 +47,22 @@ DEFAULT_LINKQUALITY_WARNING = 100
 DEFAULT_RSSI_WARNING = -70
 DEFAULT_UNAVAILABLE_WARNING = 3600  # 1 hour
 DEFAULT_UNAVAILABLE_CRITICAL = 21600  # 6 hours
-DEFAULT_EXCLUDE_DOMAINS = ["sun", "weather", "updater"]
+DEFAULT_EXCLUDE_DOMAINS = [
+    # System / HA internals
+    "sun", "weather", "updater", "update", "persistent_notification",
+    # Automations & scripts
+    "automation", "script", "scene", "schedule",
+    # Input helpers
+    "input_boolean", "input_number", "input_text", "input_select", "input_datetime",
+    # Other helpers
+    "timer", "counter", "group", "tag",
+    # People & zones
+    "zone", "person",
+    # AI / voice / media
+    "conversation", "tts", "stt", "wake_word",
+    # Calendar & tasks
+    "calendar", "todo", "event",
+]
 DEFAULT_EXCLUDE_ENTITIES = []
 DEFAULT_INCLUDE_DISABLED = False
 

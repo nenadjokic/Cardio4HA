@@ -100,7 +100,7 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
             webcomponent_name="cardio4ha-panel",
             sidebar_title="Cardio4HA",
             sidebar_icon="mdi:heart-pulse",
-            module_url=PANEL_JS_URL,
+            module_url=f"{PANEL_JS_URL}?v=110",
             require_admin=False,
             config={},
         )
