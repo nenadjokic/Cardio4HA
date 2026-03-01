@@ -146,10 +146,10 @@ class Cardio4HAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             new_options.setdefault(CONF_NOTIFY_DEVICE_COOLDOWN, DEFAULT_NOTIFY_DEVICE_COOLDOWN)
             new_options.setdefault(CONF_HISTORY_RETENTION_DAYS, DEFAULT_HISTORY_RETENTION_DAYS)
 
+            config_entry.version = 2
             hass.config_entries.async_update_entry(
                 config_entry,
                 options=new_options,
-                version=2,
             )
 
         _LOGGER.info("Migration to version 2 complete")

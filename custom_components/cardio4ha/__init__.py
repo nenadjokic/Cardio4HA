@@ -6,6 +6,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from homeassistant.components.frontend import async_remove_panel
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.components.panel_custom import async_register_panel
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -85,11 +86,9 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
         return
 
     # Register sidebar panel JS
-    hass.http.register_static_path(
-        PANEL_JS_URL,
-        str(PANEL_JS_PATH),
-        cache_headers=False,
-    )
+    await hass.http.async_register_static_paths([
+        StaticPathConfig(PANEL_JS_URL, str(PANEL_JS_PATH), cache_headers=False),
+    ])
 
     # Register sidebar panel
     try:
