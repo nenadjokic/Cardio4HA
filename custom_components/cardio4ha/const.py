@@ -68,7 +68,51 @@ DEFAULT_INCLUDE_DISABLED = False
 
 # Phase 2 Defaults
 DEFAULT_EXCLUDE_ENTITY_WILDCARDS = []
-DEFAULT_EXCLUDE_INTEGRATIONS = []
+DEFAULT_EXCLUDE_INTEGRATIONS = [
+    # AI / Conversation
+    "openai_conversation",
+    "google_generative_ai_conversation",
+    "anthropic",
+    "ollama",
+    # Virtual / Helper sensors
+    "template",
+    "statistics",
+    "derivative",
+    "integration",
+    "min_max",
+    "utility_meter",
+    "trend",
+    "threshold",
+    "bayesian",
+    "filter",
+    "history_stats",
+    "generic_thermostat",
+    "generic_hygrostat",
+    # System
+    "uptime",
+    "time_date",
+    "version",
+    "systemmonitor",
+    "local_ip",
+    "dnsip",
+    "cert_expiry",
+    # External data / Cloud
+    "rest",
+    "command_line",
+    "sql",
+    "scrape",
+    "waze_travel_time",
+    "google_translate",
+    # Misc virtual
+    "random",
+    "simulated",
+    "demo",
+    "proximity",
+    "worldclock",
+    "github",
+    "gitlab_ci",
+    "shopping_list",
+]
 DEFAULT_EXCLUDE_AREAS = []
 DEFAULT_MONITOR_ZIGBEE2MQTT = True
 

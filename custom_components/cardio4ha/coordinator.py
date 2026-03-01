@@ -425,6 +425,9 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                 if entity_entry and entity_entry.device_id:
                     device_entry = device_registry.async_get(entity_entry.device_id)
                     if device_entry:
+                        # Skip virtual/software devices (no physical connections like MAC/Zigbee IEEE)
+                        if not device_entry.connections:
+                            continue
                         device_name = device_entry.name_by_user or device_entry.name
                         if device_entry.area_id:
                             area_entry = area_registry.async_get_area(device_entry.area_id)

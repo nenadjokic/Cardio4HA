@@ -38,7 +38,7 @@ PANEL_JS_PATH = Path(__file__).parent / "panel" / "cardio4ha-panel.js"
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Cardio4HA from a config entry."""
-    _LOGGER.info("Setting up Cardio4HA v1.1.0")
+    _LOGGER.info("Setting up Cardio4HA v1.1.1")
 
     update_interval = entry.options.get(
         CONF_UPDATE_INTERVAL,
@@ -78,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Setup options update listener
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
-    _LOGGER.info("Cardio4HA v1.1.0 setup complete")
+    _LOGGER.info("Cardio4HA v1.1.1 setup complete")
     return True
 
 
@@ -100,7 +100,7 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
             webcomponent_name="cardio4ha-panel",
             sidebar_title="Cardio4HA",
             sidebar_icon="mdi:heart-pulse",
-            module_url=f"{PANEL_JS_URL}?v=110",
+            module_url=f"{PANEL_JS_URL}?v=111",
             require_admin=False,
             config={},
         )
