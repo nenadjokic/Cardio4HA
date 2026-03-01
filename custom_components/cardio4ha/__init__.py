@@ -20,6 +20,8 @@ from .const import (
     SERVICE_CLEAR_HISTORY,
     SERVICE_FORCE_SCAN,
     SERVICE_CLEAR_DEVICE_HISTORY,
+    SERVICE_SET_IGNORE,
+    SERVICE_CLEAR_IGNORE,
 )
 from .coordinator import Cardio4HACoordinator
 from .notifications import NotificationEngine
@@ -36,7 +38,7 @@ PANEL_JS_PATH = Path(__file__).parent / "panel" / "cardio4ha-panel.js"
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Cardio4HA from a config entry."""
-    _LOGGER.info("Setting up Cardio4HA v1.0.0")
+    _LOGGER.info("Setting up Cardio4HA v1.1.0")
 
     update_interval = entry.options.get(
         CONF_UPDATE_INTERVAL,
@@ -76,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Setup options update listener
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
-    _LOGGER.info("Cardio4HA v1.0.0 setup complete")
+    _LOGGER.info("Cardio4HA v1.1.0 setup complete")
     return True
 
 
@@ -118,6 +120,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok:
         coordinator = hass.data[DOMAIN].pop(entry.entry_id)
         await coordinator.async_save_unavailable_data()
+        await coordinator.async_save_ignore_data()
         await coordinator.device_history.async_save()
         if coordinator.notification_engine:
             coordinator.notification_engine.unload()
@@ -191,6 +194,25 @@ async def _async_setup_services(hass: HomeAssistant) -> None:
             coordinator.device_history.clear_all()
         await coordinator.device_history.async_save()
 
+    async def handle_set_ignore(call) -> None:
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            return
+        device_key = call.data.get("device_key")
+        name = call.data.get("name", "")
+        if device_key:
+            coordinator.set_ignore(device_key, name)
+
+    async def handle_clear_ignore(call) -> None:
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            return
+        device_key = call.data.get("device_key")
+        if device_key:
+            coordinator.clear_ignore(device_key)
+        else:
+            coordinator.clear_all_ignored()
+
     if not hass.services.has_service(DOMAIN, SERVICE_MARK_AS_MAINTENANCE):
         hass.services.async_register(DOMAIN, SERVICE_MARK_AS_MAINTENANCE, handle_mark_as_maintenance)
     if not hass.services.has_service(DOMAIN, SERVICE_CLEAR_HISTORY):
@@ -199,3 +221,7 @@ async def _async_setup_services(hass: HomeAssistant) -> None:
         hass.services.async_register(DOMAIN, SERVICE_FORCE_SCAN, handle_force_scan)
     if not hass.services.has_service(DOMAIN, SERVICE_CLEAR_DEVICE_HISTORY):
         hass.services.async_register(DOMAIN, SERVICE_CLEAR_DEVICE_HISTORY, handle_clear_device_history)
+    if not hass.services.has_service(DOMAIN, SERVICE_SET_IGNORE):
+        hass.services.async_register(DOMAIN, SERVICE_SET_IGNORE, handle_set_ignore)
+    if not hass.services.has_service(DOMAIN, SERVICE_CLEAR_IGNORE):
+        hass.services.async_register(DOMAIN, SERVICE_CLEAR_IGNORE, handle_clear_ignore)

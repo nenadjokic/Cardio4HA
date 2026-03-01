@@ -49,9 +49,16 @@ A full-page dashboard pinned to your HA sidebar with 5 views:
 - **Unavailable** - Sortable/filterable table with expandable rows, 30-day timeline bars
 - **Battery** - Battery bars with prediction badges, trend charts
 - **Signal** - 5-bar signal indicators, signal trend charts
-- **Maintenance** - Manage devices under maintenance
+- **Maintenance** - Manage devices under maintenance and permanently ignored devices
 
 All views support search, area filtering, severity filtering, and CSV export.
+
+### Per-Device Ignore (v1.1.0)
+Permanently hide specific devices from all monitoring views with one click. Unlike Maintenance (temporary with expiration), Ignore is permanent until manually cleared.
+- Click **Ignore** on any expanded device row (Unavailable, Battery, or Signal views)
+- Ignored devices disappear from all views and health score calculations
+- Manage all ignored devices from the **Maintenance** tab with Un-ignore / Clear All
+- Persists across HA restarts
 
 ### Additional Capabilities
 - Device-level tracking (shows devices, not individual sensors)
@@ -131,6 +138,8 @@ Each sensor includes detailed device lists in its attributes for use in automati
 | `cardio4ha.mark_as_maintenance` | Mark a device as under maintenance |
 | `cardio4ha.clear_history` | Clear unavailable tracking history |
 | `cardio4ha.clear_device_history` | Clear 30-day device event history |
+| `cardio4ha.set_ignore` | Permanently ignore a device from monitoring |
+| `cardio4ha.clear_ignore` | Un-ignore a device or clear all ignored |
 
 ## Configuration
 
@@ -260,6 +269,15 @@ Cardio4HA is designed for large installations:
 - 30-day history storage stays under **1 MB**
 - Minimal CPU/memory usage with smart deduplication
 
+## Upgrading from v1.0.0
+
+The upgrade is automatic:
+- New ignore storage initializes empty
+- All existing stores (unavailable tracking, maintenance, device history) are preserved
+- New "Ignore" buttons appear on expanded device rows
+- New "Ignored Devices" section appears in the Maintenance tab
+- Two new services: `set_ignore` and `clear_ignore`
+
 ## Upgrading from v0.3.0
 
 The upgrade is automatic:
@@ -282,7 +300,10 @@ Yes. It monitors any entity in Home Assistant regardless of integration.
 All history is persisted to disk and restored automatically.
 
 **Q: Can I exclude certain devices?**
-Yes. Use wildcards, integration exclusions, or area exclusions in the options flow.
+Yes. Use wildcards, integration exclusions, or area exclusions in the options flow. You can also click "Ignore" on any device row to permanently hide it from all views.
+
+**Q: What's the difference between Maintenance and Ignore?**
+Maintenance is temporary (expires after a set duration). Ignore is permanent until you manually un-ignore the device from the Maintenance tab.
 
 **Q: When will battery predictions start working?**
 After approximately 5 battery readings (a few hours of operation). More readings = more accurate predictions.

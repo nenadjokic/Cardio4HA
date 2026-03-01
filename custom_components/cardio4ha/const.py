@@ -134,6 +134,8 @@ SERVICE_MARK_AS_MAINTENANCE = "mark_as_maintenance"
 SERVICE_CLEAR_HISTORY = "clear_history"
 SERVICE_FORCE_SCAN = "force_scan"
 SERVICE_CLEAR_DEVICE_HISTORY = "clear_device_history"
+SERVICE_SET_IGNORE = "set_ignore"
+SERVICE_CLEAR_IGNORE = "clear_ignore"
 
 # Event types
 EVENT_CRITICAL_ISSUE = "cardio4ha_critical_issue"
@@ -142,6 +144,10 @@ EVENT_DEVICE_RECOVERED = "cardio4ha_device_recovered"
 # Maintenance storage
 MAINTENANCE_STORAGE_KEY = f"{DOMAIN}.maintenance_devices"
 MAINTENANCE_STORAGE_VERSION = 1
+
+# Ignore storage
+IGNORE_STORAGE_KEY = f"{DOMAIN}.ignored_devices"
+IGNORE_STORAGE_VERSION = 1
 
 # Notification types
 NOTIFY_TYPE_DEVICE_OFFLINE = "device_offline"

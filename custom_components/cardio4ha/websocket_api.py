@@ -42,6 +42,8 @@ def async_register_websocket_api(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, websocket_clear_history)
     websocket_api.async_register_command(hass, websocket_get_device_timeline)
     websocket_api.async_register_command(hass, websocket_get_notification_history)
+    websocket_api.async_register_command(hass, websocket_set_ignore)
+    websocket_api.async_register_command(hass, websocket_clear_ignore)
 
 
 def _get_coordinator(hass: HomeAssistant):
@@ -116,6 +118,7 @@ def _build_payload(hass: HomeAssistant, coordinator) -> dict:
         "battery_predictions": data.get("battery_predictions", {}),
         "notification_history": notification_history,
         "maintenance": coordinator.maintenance_devices,
+        "ignored_devices": coordinator.ignored_devices,
         "config": config,
         "last_update": data.get("last_update"),
         "scan_duration": data.get("scan_duration", 0),
@@ -309,3 +312,50 @@ async def websocket_get_notification_history(
         history = coordinator.notification_engine.notification_history
 
     connection.send_result(msg["id"], {"notifications": history})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "cardio4ha/set_ignore",
+    vol.Required("device_key"): str,
+    vol.Optional("name", default=""): str,
+    vol.Optional("area", default=""): str,
+})
+@websocket_api.async_response
+async def websocket_set_ignore(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict,
+) -> None:
+    """Permanently ignore a device."""
+    coordinator = _get_coordinator(hass)
+    if not coordinator:
+        connection.send_error(msg["id"], "not_found", "Coordinator not found")
+        return
+
+    coordinator.set_ignore(msg["device_key"], msg.get("name", ""), msg.get("area", ""))
+    connection.send_result(msg["id"], {"success": True})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "cardio4ha/clear_ignore",
+    vol.Optional("device_key"): str,
+})
+@websocket_api.async_response
+async def websocket_clear_ignore(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict,
+) -> None:
+    """Clear ignore status for a device or all devices."""
+    coordinator = _get_coordinator(hass)
+    if not coordinator:
+        connection.send_error(msg["id"], "not_found", "Coordinator not found")
+        return
+
+    device_key = msg.get("device_key")
+    if device_key:
+        coordinator.clear_ignore(device_key)
+    else:
+        coordinator.clear_all_ignored()
+
+    connection.send_result(msg["id"], {"success": True})

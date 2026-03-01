@@ -60,7 +60,7 @@ class Cardio4HASensor(CoordinatorEntity, SensorEntity):
             "name": "Cardio4HA",
             "manufacturer": "Cardio4HA",
             "model": "Device Health Monitor",
-            "sw_version": "1.0.0",
+            "sw_version": "1.1.0",
         }
 
         if sensor_type == SENSOR_UNAVAILABLE_COUNT:

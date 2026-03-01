@@ -4,7 +4,7 @@
  * WebSocket-powered, real-time, expandable rows, timeline bars.
  */
 
-const PANEL_VERSION = "1.0.0";
+const PANEL_VERSION = "1.1.0";
 
 // ════════════════════════════════════════════════════════════
 // SECTION 1: Panel Class
@@ -205,6 +205,34 @@ class Cardio4HAPanel extends HTMLElement {
     } catch (e) { console.error("Clear maintenance failed", e); }
   }
 
+  // ── Ignore ───────────────────────────────────────────────
+
+  async _setIgnore(deviceKey, name = "", area = "") {
+    try {
+      await this._hass.callWS({
+        type: "cardio4ha/set_ignore",
+        device_key: deviceKey,
+        name: name,
+        area: area,
+      });
+    } catch (e) { console.error("Set ignore failed", e); }
+  }
+
+  async _clearIgnore(deviceKey) {
+    try {
+      if (deviceKey) {
+        await this._hass.callWS({
+          type: "cardio4ha/clear_ignore",
+          device_key: deviceKey,
+        });
+      } else {
+        await this._hass.callWS({
+          type: "cardio4ha/clear_ignore",
+        });
+      }
+    } catch (e) { console.error("Clear ignore failed", e); }
+  }
+
   // ── Export CSV ─────────────────────────────────────────────
 
   _exportCSV() {
@@ -304,7 +332,7 @@ class Cardio4HAPanel extends HTMLElement {
     if (viewId === "unavailable") count = s.unavailable_count || 0;
     else if (viewId === "battery") count = s.low_battery_count || 0;
     else if (viewId === "signal") count = s.weak_signal_count || 0;
-    else if (viewId === "maintenance") count = Object.keys(this._data.maintenance || {}).length;
+    else if (viewId === "maintenance") count = Object.keys(this._data.maintenance || {}).length + Object.keys(this._data.ignored_devices || {}).length;
     if (count > 0) return `<span class="tab-badge">${count}</span>`;
     return "";
   }
@@ -488,6 +516,9 @@ class Cardio4HAPanel extends HTMLElement {
           <button class="action-btn maintenance-btn" data-entity="${dev.entity_id}">
             <ha-icon icon="mdi:wrench"></ha-icon> Maintenance
           </button>
+          <button class="action-btn ignore-btn" data-key="${dk}" data-name="${this._escapeHtml(dev.name || "")}" data-area="${this._escapeHtml(dev.area || "")}">
+            <ha-icon icon="mdi:eye-off"></ha-icon> Ignore
+          </button>
           <button class="action-btn info-btn" data-entity="${dev.entity_id}">
             <ha-icon icon="mdi:information"></ha-icon> More Info
           </button>
@@ -564,6 +595,9 @@ class Cardio4HAPanel extends HTMLElement {
           ${daysRemaining !== null ? `<div class="detail-item"><span class="detail-label">Predicted Empty</span><span class="detail-value">${daysRemaining} days</span></div>` : ""}
         </div>
         <div class="action-buttons">
+          <button class="action-btn ignore-btn" data-key="${dk}" data-name="${this._escapeHtml(dev.name || "")}" data-area="${this._escapeHtml(dev.area || "")}">
+            <ha-icon icon="mdi:eye-off"></ha-icon> Ignore
+          </button>
           <button class="action-btn info-btn" data-entity="${dev.entity_id}">
             <ha-icon icon="mdi:information"></ha-icon> More Info
           </button>
@@ -665,6 +699,9 @@ class Cardio4HAPanel extends HTMLElement {
           <div class="detail-item"><span class="detail-label">Area</span><span class="detail-value">${this._escapeHtml(dev.area || "None")}</span></div>
         </div>
         <div class="action-buttons">
+          <button class="action-btn ignore-btn" data-key="${dk}" data-name="${this._escapeHtml(dev.name || "")}" data-area="${this._escapeHtml(dev.area || "")}">
+            <ha-icon icon="mdi:eye-off"></ha-icon> Ignore
+          </button>
           <button class="action-btn info-btn" data-entity="${dev.entity_id}">
             <ha-icon icon="mdi:information"></ha-icon> More Info
           </button>
@@ -752,7 +789,44 @@ class Cardio4HAPanel extends HTMLElement {
             <ha-icon icon="mdi:broom"></ha-icon> Clear All Maintenance
           </button>
         </div>
-      </div>`;
+      </div>
+      ${this._renderIgnoredDevices()}`;
+  }
+
+  _renderIgnoredDevices() {
+    const ignored = this._data.ignored_devices || {};
+    const entries = Object.entries(ignored);
+
+    return `
+      <div class="section-card" style="margin-top: 20px;">
+        <h3>Ignored Devices</h3>
+        ${entries.length === 0
+          ? `<div class="empty-state-inline">No ignored devices</div>`
+          : `<div class="device-list">${entries.map(([deviceKey, info]) => `
+              <div class="device-row">
+                <div class="device-row-main">
+                  <div class="device-info">
+                    <div class="device-name">${this._escapeHtml(info.name || deviceKey)}</div>
+                    <div class="device-meta">${this._escapeHtml(info.area || "No area")} &middot; Since: ${this._formatTime(info.ignored_since)}</div>
+                  </div>
+                  <div class="device-values">
+                    <button class="action-btn clear-ignore-btn" data-key="${deviceKey}">
+                      <ha-icon icon="mdi:eye"></ha-icon> Un-ignore
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `).join("")}</div>`
+        }
+      </div>
+      ${entries.length > 0 ? `
+      <div class="section-card">
+        <div class="action-buttons">
+          <button class="action-btn clear-all-ignore-btn">
+            <ha-icon icon="mdi:eye"></ha-icon> Clear All Ignored
+          </button>
+        </div>
+      </div>` : ""}`;
   }
 
   // ── Filter Bar ────────────────────────────────────────────
@@ -895,6 +969,20 @@ class Cardio4HAPanel extends HTMLElement {
       clearAllBtn.addEventListener("click", async () => {
         try { await this._hass.callWS({ type: "cardio4ha/clear_maintenance" }); } catch (e) {}
       });
+    }
+
+    // Ignore buttons
+    root.querySelectorAll(".ignore-btn").forEach(btn => {
+      btn.addEventListener("click", () => this._setIgnore(btn.dataset.key, btn.dataset.name || "", btn.dataset.area || ""));
+    });
+
+    root.querySelectorAll(".clear-ignore-btn").forEach(btn => {
+      btn.addEventListener("click", () => this._clearIgnore(btn.dataset.key));
+    });
+
+    const clearAllIgnoreBtn = root.querySelector(".clear-all-ignore-btn");
+    if (clearAllIgnoreBtn) {
+      clearAllIgnoreBtn.addEventListener("click", () => this._clearIgnore(null));
     }
 
     // More Info buttons
@@ -1507,6 +1595,11 @@ class Cardio4HAPanel extends HTMLElement {
       }
       .action-btn:hover { background: var(--border); }
       .action-btn ha-icon { --mdc-icon-size: 18px; }
+      .ignore-btn { color: var(--warning-color, #f4b400); border-color: var(--warning-color, #f4b400); }
+      .ignore-btn:hover { background: rgba(244, 180, 0, 0.1); }
+      .clear-ignore-btn { color: var(--success-color, #4caf50); }
+      .clear-all-ignore-btn { color: var(--warning-color, #f4b400); border-color: var(--warning-color, #f4b400); }
+      .clear-all-ignore-btn:hover { background: rgba(244, 180, 0, 0.1); }
 
       /* ── Mobile ── */
       @media (max-width: 600px) {

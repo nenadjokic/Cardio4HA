@@ -26,6 +26,8 @@ from .const import (
     STORAGE_VERSION,
     MAINTENANCE_STORAGE_KEY,
     MAINTENANCE_STORAGE_VERSION,
+    IGNORE_STORAGE_KEY,
+    IGNORE_STORAGE_VERSION,
     CONF_BATTERY_CRITICAL,
     CONF_BATTERY_WARNING,
     CONF_BATTERY_LOW,
@@ -97,6 +99,8 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
         self._store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         self._maintenance_store = Store(hass, MAINTENANCE_STORAGE_VERSION, MAINTENANCE_STORAGE_KEY)
         self.maintenance_devices: dict[str, dict[str, Any]] = {}
+        self._ignore_store = Store(hass, IGNORE_STORAGE_VERSION, IGNORE_STORAGE_KEY)
+        self.ignored_devices: dict[str, dict[str, Any]] = {}
         self.unavailable_devices: list[dict[str, Any]] = []
         self.low_battery_devices: list[dict[str, Any]] = []
         self.weak_signal_devices: list[dict[str, Any]] = []
@@ -118,6 +122,7 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
         await asyncio.gather(
             self._async_load_unavailable_data(),
             self._async_load_maintenance_data(),
+            self._async_load_ignore_data(),
             self.device_history.async_load(),
         )
 
@@ -171,6 +176,27 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
             await self._maintenance_store.async_save({"devices": self.maintenance_devices})
         except Exception as err:
             _LOGGER.error("Error saving maintenance data: %s", err)
+
+    async def _async_load_ignore_data(self) -> None:
+        """Load ignored devices data from storage."""
+        try:
+            data = await self._ignore_store.async_load()
+            if data is not None:
+                self.ignored_devices = data.get("devices", {})
+                _LOGGER.info(
+                    "Loaded %d ignored device(s) from storage",
+                    len(self.ignored_devices)
+                )
+        except Exception as err:
+            _LOGGER.error("Error loading ignore data: %s", err)
+            self.ignored_devices = {}
+
+    async def async_save_ignore_data(self) -> None:
+        """Save ignored devices data to storage."""
+        try:
+            await self._ignore_store.async_save({"devices": self.ignored_devices})
+        except Exception as err:
+            _LOGGER.error("Error saving ignore data: %s", err)
 
     def _get_config_value(self, key: str, default: Any) -> Any:
         """Get configuration value from options or data."""
@@ -235,9 +261,15 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
         domain: str,
         entity_entry: er.RegistryEntry | None = None,
         area_name: str | None = None,
+        device_id: str | None = None,
     ) -> bool:
         """Check if entity should be excluded."""
         if self._is_under_maintenance(entity_id):
+            return True
+
+        # Check if device is permanently ignored
+        device_key = self._get_device_key(device_id, entity_id)
+        if device_key in self.ignored_devices:
             return True
 
         # Zigbee2MQTT Override
@@ -355,7 +387,7 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                                 area_name = area_entry.name
 
                 # Exclusion check
-                if self._should_exclude_entity(entity_id, domain, entity_entry, area_name):
+                if self._should_exclude_entity(entity_id, domain, entity_entry, area_name, device_id):
                     continue
 
                 device_key = self._get_device_key(device_id, entity_id)
@@ -787,6 +819,31 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
         self.maintenance_devices = {}
         _LOGGER.info("All maintenance status cleared")
         self.hass.async_create_task(self.async_save_maintenance_data())
+
+    # ==================== Ignore Mode ====================
+
+    def set_ignore(self, device_key: str, name: str = "", area: str = "") -> None:
+        """Permanently ignore a device."""
+        self.ignored_devices[device_key] = {
+            "ignored_since": dt_util.utcnow().isoformat(),
+            "name": name,
+            "area": area,
+        }
+        _LOGGER.info("Device %s permanently ignored", device_key)
+        self.hass.async_create_task(self.async_save_ignore_data())
+
+    def clear_ignore(self, device_key: str) -> None:
+        """Clear ignore status for a device."""
+        if device_key in self.ignored_devices:
+            del self.ignored_devices[device_key]
+            _LOGGER.info("Device %s ignore status cleared", device_key)
+            self.hass.async_create_task(self.async_save_ignore_data())
+
+    def clear_all_ignored(self) -> None:
+        """Clear all ignored devices."""
+        self.ignored_devices = {}
+        _LOGGER.info("All ignored devices cleared")
+        self.hass.async_create_task(self.async_save_ignore_data())
 
     def force_scan(self) -> None:
         """Force an immediate scan."""

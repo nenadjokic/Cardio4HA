@@ -42,3 +42,29 @@ clear_device_history:
       example: abc123def456
       selector:
         text:
+
+set_ignore:
+  description: Permanently ignore a device from all monitoring views
+  fields:
+    device_key:
+      description: Device key to ignore
+      required: true
+      example: abc123def456
+      selector:
+        text:
+    name:
+      description: Optional friendly name of the device
+      required: false
+      example: "Living Room Sensor"
+      selector:
+        text:
+
+clear_ignore:
+  description: Clear ignore status for a device or all ignored devices
+  fields:
+    device_key:
+      description: Optional device key to un-ignore, or all if omitted
+      required: false
+      example: abc123def456
+      selector:
+        text:
