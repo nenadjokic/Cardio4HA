@@ -28,6 +28,7 @@ from .const import (
     MAINTENANCE_STORAGE_VERSION,
     IGNORE_STORAGE_KEY,
     IGNORE_STORAGE_VERSION,
+    STARTUP_DELAY,
     CONF_BATTERY_CRITICAL,
     CONF_BATTERY_WARNING,
     CONF_BATTERY_LOW,
@@ -113,6 +114,10 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
 
         # v1.0.0: Notification engine (set by __init__.py after creation)
         self.notification_engine = None
+
+        # v1.1.0: Startup delay - wait for HA to fully initialize
+        self._startup_time = dt_util.utcnow()
+        self._startup_delay = STARTUP_DELAY
 
         # Load saved data
         hass.async_create_task(self._async_load_all_data())
@@ -316,8 +321,46 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
         """Get a stable key for device history tracking."""
         return device_id or entity_id
 
+    @property
+    def startup_remaining(self) -> int:
+        """Seconds remaining in startup delay."""
+        elapsed = (dt_util.utcnow() - self._startup_time).total_seconds()
+        remaining = self._startup_delay - elapsed
+        return max(0, int(remaining))
+
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from Home Assistant."""
+        # v1.1.0: Startup delay - wait for HA to fully start
+        remaining = self.startup_remaining
+        if remaining > 0:
+            _LOGGER.debug(
+                "Startup delay: %d seconds remaining before first scan", remaining
+            )
+            return {
+                "unavailable": [],
+                "low_battery": [],
+                "weak_signal": [],
+                "summary": {
+                    "total_entities": 0,
+                    "unavailable_count": 0,
+                    "low_battery_count": 0,
+                    "weak_signal_count": 0,
+                    "healthy_count": 0,
+                    "critical_count": 0,
+                    "warning_count": 0,
+                    "flaky_count": 0,
+                    "health_score": 100,
+                },
+                "health_score": 100,
+                "flaky_devices": [],
+                "flaky_device_keys": set(),
+                "flaky_count": 0,
+                "battery_predictions": {},
+                "last_update": dt_util.utcnow(),
+                "scan_duration": 0,
+                "startup_remaining": remaining,
+            }
+
         start_time = dt_util.utcnow()
 
         try:
@@ -830,20 +873,25 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
             "area": area,
         }
         _LOGGER.info("Device %s permanently ignored", device_key)
-        self.hass.async_create_task(self.async_save_ignore_data())
+        self.hass.async_create_task(self._async_save_ignore_and_refresh())
 
     def clear_ignore(self, device_key: str) -> None:
         """Clear ignore status for a device."""
         if device_key in self.ignored_devices:
             del self.ignored_devices[device_key]
             _LOGGER.info("Device %s ignore status cleared", device_key)
-            self.hass.async_create_task(self.async_save_ignore_data())
+            self.hass.async_create_task(self._async_save_ignore_and_refresh())
 
     def clear_all_ignored(self) -> None:
         """Clear all ignored devices."""
         self.ignored_devices = {}
         _LOGGER.info("All ignored devices cleared")
-        self.hass.async_create_task(self.async_save_ignore_data())
+        self.hass.async_create_task(self._async_save_ignore_and_refresh())
+
+    async def _async_save_ignore_and_refresh(self) -> None:
+        """Save ignore data and trigger a rescan."""
+        await self.async_save_ignore_data()
+        await self.async_refresh()
 
     def force_scan(self) -> None:
         """Force an immediate scan."""

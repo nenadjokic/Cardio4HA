@@ -122,6 +122,7 @@ def _build_payload(hass: HomeAssistant, coordinator) -> dict:
         "config": config,
         "last_update": data.get("last_update"),
         "scan_duration": data.get("scan_duration", 0),
+        "startup_remaining": coordinator.startup_remaining,
     }
 
     return _serialize_value(payload)

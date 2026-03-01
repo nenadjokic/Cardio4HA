@@ -28,6 +28,7 @@ class Cardio4HAPanel extends HTMLElement {
     this._expandedRows = new Set();
     this._timelineCache = {};
     this._flakyKeys = new Set();
+    this._startupTimer = null;
   }
 
   set hass(hass) {
@@ -55,6 +56,10 @@ class Cardio4HAPanel extends HTMLElement {
 
   disconnectedCallback() {
     this._unsubscribe();
+    if (this._startupTimer) {
+      clearInterval(this._startupTimer);
+      this._startupTimer = null;
+    }
   }
 
   // ── WebSocket ─────────────────────────────────────────────
@@ -84,6 +89,30 @@ class Cardio4HAPanel extends HTMLElement {
   _handleUpdate(msg) {
     this._data = msg;
     this._flakyKeys = new Set(msg.flaky_device_keys || []);
+    // Start/stop countdown timer for startup delay
+    const remaining = msg.startup_remaining || 0;
+    if (remaining > 0 && !this._startupTimer) {
+      this._startupTimer = setInterval(() => {
+        const el = this.shadowRoot.querySelector(".startup-countdown");
+        if (!el) return;
+        const cur = parseInt(el.dataset.remaining || "0", 10);
+        if (cur <= 1) {
+          clearInterval(this._startupTimer);
+          this._startupTimer = null;
+          return;
+        }
+        const next = cur - 1;
+        el.dataset.remaining = next;
+        const m = Math.floor(next / 60);
+        const s = next % 60;
+        el.querySelector(".countdown-time").textContent = `${m}:${s.toString().padStart(2, "0")}`;
+        const pct = ((120 - next) / 120) * 100;
+        el.querySelector(".countdown-progress-fill").style.width = `${pct}%`;
+      }, 1000);
+    } else if (remaining <= 0 && this._startupTimer) {
+      clearInterval(this._startupTimer);
+      this._startupTimer = null;
+    }
     this._updateDOM();
   }
 
@@ -343,6 +372,25 @@ class Cardio4HAPanel extends HTMLElement {
 
   _renderContent() {
     if (!this._data) return `<div class="loading"><div class="spinner"></div><p>Loading device data...</p></div>`;
+    const startupRemaining = this._data.startup_remaining || 0;
+    if (startupRemaining > 0) {
+      const m = Math.floor(startupRemaining / 60);
+      const s = startupRemaining % 60;
+      const pct = ((120 - startupRemaining) / 120) * 100;
+      return `
+        <div class="startup-countdown" data-remaining="${startupRemaining}">
+          <div class="startup-icon">
+            <ha-icon icon="mdi:heart-pulse"></ha-icon>
+          </div>
+          <h2 class="startup-title">Waiting for Home Assistant</h2>
+          <p class="startup-sub">Cardio4HA will begin scanning after HA finishes starting up</p>
+          <div class="countdown-time">${m}:${s.toString().padStart(2, "0")}</div>
+          <div class="countdown-progress">
+            <div class="countdown-progress-fill" style="width: ${pct}%"></div>
+          </div>
+          <p class="startup-hint">First scan starts automatically when countdown reaches zero</p>
+        </div>`;
+    }
     switch (this._view) {
       case "overview": return this._renderOverview();
       case "unavailable": return this._renderUnavailable();
@@ -1159,6 +1207,65 @@ class Cardio4HAPanel extends HTMLElement {
         margin-bottom: 16px;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* ── Startup Countdown ── */
+      .startup-countdown {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 20px;
+        text-align: center;
+      }
+      .startup-icon {
+        --mdc-icon-size: 56px;
+        color: var(--accent);
+        margin-bottom: 20px;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(0.95); }
+      }
+      .startup-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+      .startup-sub {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 28px;
+        max-width: 400px;
+      }
+      .countdown-time {
+        font-size: 48px;
+        font-weight: 700;
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+        margin-bottom: 20px;
+        letter-spacing: 2px;
+      }
+      .countdown-progress {
+        width: 280px;
+        height: 6px;
+        background: var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .countdown-progress-fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 3px;
+        transition: width 1s linear;
+      }
+      .startup-hint {
+        font-size: 12px;
+        color: var(--text-secondary);
+        opacity: 0.7;
+      }
 
       /* ── Empty State ── */
       .empty-state {

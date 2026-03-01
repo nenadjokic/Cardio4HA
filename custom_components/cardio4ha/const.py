@@ -119,6 +119,9 @@ SIGNAL_TYPE_WIFI = "wifi"
 MIN_UPDATE_INTERVAL = 30
 MAX_UPDATE_INTERVAL = 300
 
+# Startup delay (seconds) - wait for HA to fully start before first scan
+STARTUP_DELAY = 120
+
 # States to track as unavailable
 UNAVAILABLE_STATES = ["unavailable", "unknown"]
 
