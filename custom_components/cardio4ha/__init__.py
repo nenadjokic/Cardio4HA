@@ -160,10 +160,11 @@ async def _async_setup_services(hass: HomeAssistant) -> None:
         coordinator = _get_coordinator(hass)
         if not coordinator:
             return
-        entity_id = call.data.get("entity_id")
+        device_key = call.data.get("device_key") or call.data.get("entity_id")
         duration = call.data.get("duration", 3600)
-        if entity_id:
-            coordinator.set_maintenance(entity_id, duration)
+        name = call.data.get("name", "")
+        if device_key:
+            coordinator.set_maintenance(device_key, duration, name)
 
     async def handle_clear_history(call) -> None:
         coordinator = _get_coordinator(hass)

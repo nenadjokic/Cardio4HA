@@ -215,21 +215,23 @@ class Cardio4HAPanel extends HTMLElement {
 
   // ── Maintenance ───────────────────────────────────────────
 
-  async _setMaintenance(entityId, duration = 3600) {
+  async _setMaintenance(deviceKey, name = "", area = "", duration = 3600) {
     try {
       await this._hass.callWS({
         type: "cardio4ha/set_maintenance",
-        entity_id: entityId,
+        device_key: deviceKey,
         duration: duration,
+        name: name,
+        area: area,
       });
     } catch (e) { console.error("Set maintenance failed", e); }
   }
 
-  async _clearMaintenance(entityId) {
+  async _clearMaintenance(deviceKey) {
     try {
       await this._hass.callWS({
         type: "cardio4ha/clear_maintenance",
-        entity_id: entityId,
+        device_key: deviceKey,
       });
     } catch (e) { console.error("Clear maintenance failed", e); }
   }
@@ -561,7 +563,7 @@ class Cardio4HAPanel extends HTMLElement {
           ${dev.device_id ? `<div class="detail-item"><span class="detail-label">Device ID</span><span class="detail-value">${dev.device_id}</span></div>` : ""}
         </div>
         <div class="action-buttons">
-          <button class="action-btn maintenance-btn" data-entity="${dev.entity_id}">
+          <button class="action-btn maintenance-btn" data-key="${dk}" data-name="${this._escapeHtml(dev.name || "")}" data-area="${this._escapeHtml(dev.area || "")}">
             <ha-icon icon="mdi:wrench"></ha-icon> Maintenance
           </button>
           <button class="action-btn ignore-btn" data-key="${dk}" data-name="${this._escapeHtml(dev.name || "")}" data-area="${this._escapeHtml(dev.area || "")}">
@@ -814,15 +816,15 @@ class Cardio4HAPanel extends HTMLElement {
         <h3>Devices Under Maintenance</h3>
         ${entries.length === 0
           ? `<div class="empty-state-inline">No devices under maintenance</div>`
-          : `<div class="device-list">${entries.map(([entityId, info]) => `
+          : `<div class="device-list">${entries.map(([deviceKey, info]) => `
               <div class="device-row">
                 <div class="device-row-main">
                   <div class="device-info">
-                    <div class="device-name">${this._escapeHtml(entityId)}</div>
-                    <div class="device-meta">Set: ${this._formatTime(info.set_at)} &middot; Expires: ${this._formatTime(info.expires_at)}</div>
+                    <div class="device-name">${this._escapeHtml(info.name || deviceKey)}</div>
+                    <div class="device-meta">${this._escapeHtml(info.area || "No area")} &middot; Set: ${this._formatTime(info.set_at)} &middot; Expires: ${this._formatTime(info.expires_at)}</div>
                   </div>
                   <div class="device-values">
-                    <button class="action-btn clear-maint-btn" data-entity="${entityId}">
+                    <button class="action-btn clear-maint-btn" data-key="${deviceKey}">
                       <ha-icon icon="mdi:close"></ha-icon> Clear
                     </button>
                   </div>
@@ -1005,11 +1007,11 @@ class Cardio4HAPanel extends HTMLElement {
 
     // Maintenance buttons
     root.querySelectorAll(".maintenance-btn").forEach(btn => {
-      btn.addEventListener("click", () => this._setMaintenance(btn.dataset.entity));
+      btn.addEventListener("click", () => this._setMaintenance(btn.dataset.key, btn.dataset.name || "", btn.dataset.area || ""));
     });
 
     root.querySelectorAll(".clear-maint-btn").forEach(btn => {
-      btn.addEventListener("click", () => this._clearMaintenance(btn.dataset.entity));
+      btn.addEventListener("click", () => this._clearMaintenance(btn.dataset.key));
     });
 
     const clearAllBtn = root.querySelector(".clear-all-maint-btn");

@@ -1,13 +1,12 @@
 mark_as_maintenance:
   description: Mark a device as under maintenance (temporarily ignore issues)
   fields:
-    entity_id:
-      description: Entity ID of the device to mark as maintenance
+    device_key:
+      description: Device key (device ID or entity ID) to mark as maintenance
       required: true
-      example: "sensor.living_room_motion"
+      example: abc123def456
       selector:
-        entity:
-          multiple: false
+        text:
     duration:
       description: Duration in seconds
       required: false
@@ -18,6 +17,12 @@ mark_as_maintenance:
           min: 60
           max: 86400
           unit_of_measurement: seconds
+    name:
+      description: Optional friendly name of the device
+      required: false
+      example: "Living Room Sensor"
+      selector:
+        text:
 
 clear_history:
   description: Clear unavailable tracking history

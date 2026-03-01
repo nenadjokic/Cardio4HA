@@ -186,8 +186,10 @@ async def websocket_force_scan(
 
 @websocket_api.websocket_command({
     vol.Required("type"): "cardio4ha/set_maintenance",
-    vol.Required("entity_id"): str,
+    vol.Required("device_key"): str,
     vol.Optional("duration", default=3600): int,
+    vol.Optional("name", default=""): str,
+    vol.Optional("area", default=""): str,
 })
 @websocket_api.async_response
 async def websocket_set_maintenance(
@@ -201,13 +203,13 @@ async def websocket_set_maintenance(
         connection.send_error(msg["id"], "not_found", "Coordinator not found")
         return
 
-    coordinator.set_maintenance(msg["entity_id"], msg["duration"])
+    coordinator.set_maintenance(msg["device_key"], msg["duration"], msg.get("name", ""), msg.get("area", ""))
     connection.send_result(msg["id"], {"success": True})
 
 
 @websocket_api.websocket_command({
     vol.Required("type"): "cardio4ha/clear_maintenance",
-    vol.Optional("entity_id"): str,
+    vol.Optional("device_key"): str,
 })
 @websocket_api.async_response
 async def websocket_clear_maintenance(
@@ -221,9 +223,9 @@ async def websocket_clear_maintenance(
         connection.send_error(msg["id"], "not_found", "Coordinator not found")
         return
 
-    entity_id = msg.get("entity_id")
-    if entity_id:
-        coordinator.clear_maintenance(entity_id)
+    device_key = msg.get("device_key")
+    if device_key:
+        coordinator.clear_maintenance(device_key)
     else:
         coordinator.clear_all_maintenance()
 

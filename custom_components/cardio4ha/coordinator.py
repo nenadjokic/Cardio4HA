@@ -250,10 +250,10 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                 return SEVERITY_WARNING
         return SEVERITY_LOW
 
-    def _is_under_maintenance(self, entity_id: str) -> bool:
-        """Check if entity is under maintenance."""
-        if entity_id in self.maintenance_devices:
-            maintenance_info = self.maintenance_devices[entity_id]
+    def _is_under_maintenance(self, key: str) -> bool:
+        """Check if key (entity_id or device_key) is under maintenance."""
+        if key in self.maintenance_devices:
+            maintenance_info = self.maintenance_devices[key]
             if maintenance_info.get("expires_at"):
                 expires_at = dt_util.parse_datetime(maintenance_info["expires_at"])
                 if expires_at and dt_util.utcnow() < expires_at:
@@ -269,11 +269,13 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
         device_id: str | None = None,
     ) -> bool:
         """Check if entity should be excluded."""
-        if self._is_under_maintenance(entity_id):
+        device_key = self._get_device_key(device_id, entity_id)
+
+        # Check maintenance by entity_id (backward compat) and device_key
+        if self._is_under_maintenance(entity_id) or self._is_under_maintenance(device_key):
             return True
 
         # Check if device is permanently ignored
-        device_key = self._get_device_key(device_id, entity_id)
         if device_key in self.ignored_devices:
             return True
 
@@ -836,32 +838,39 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
 
     # ==================== Maintenance Mode ====================
 
-    def set_maintenance(self, entity_id: str, duration_seconds: int = 3600) -> None:
+    def set_maintenance(self, device_key: str, duration_seconds: int = 3600, name: str = "", area: str = "") -> None:
         """Mark a device as under maintenance."""
         expires_at = dt_util.utcnow() + timedelta(seconds=duration_seconds)
-        self.maintenance_devices[entity_id] = {
+        self.maintenance_devices[device_key] = {
             "expires_at": expires_at.isoformat(),
             "duration": duration_seconds,
             "set_at": dt_util.utcnow().isoformat(),
+            "name": name,
+            "area": area,
         }
         _LOGGER.info(
             "Device %s marked as maintenance for %d seconds (until %s)",
-            entity_id, duration_seconds, expires_at.isoformat()
+            device_key, duration_seconds, expires_at.isoformat()
         )
-        self.hass.async_create_task(self.async_save_maintenance_data())
+        self.hass.async_create_task(self._async_save_maintenance_and_refresh())
 
-    def clear_maintenance(self, entity_id: str) -> None:
+    def clear_maintenance(self, device_key: str) -> None:
         """Clear maintenance status for a device."""
-        if entity_id in self.maintenance_devices:
-            del self.maintenance_devices[entity_id]
-            _LOGGER.info("Device %s maintenance status cleared", entity_id)
-            self.hass.async_create_task(self.async_save_maintenance_data())
+        if device_key in self.maintenance_devices:
+            del self.maintenance_devices[device_key]
+            _LOGGER.info("Device %s maintenance status cleared", device_key)
+            self.hass.async_create_task(self._async_save_maintenance_and_refresh())
 
     def clear_all_maintenance(self) -> None:
         """Clear all maintenance status."""
         self.maintenance_devices = {}
         _LOGGER.info("All maintenance status cleared")
-        self.hass.async_create_task(self.async_save_maintenance_data())
+        self.hass.async_create_task(self._async_save_maintenance_and_refresh())
+
+    async def _async_save_maintenance_and_refresh(self) -> None:
+        """Save maintenance data and trigger a rescan."""
+        await self.async_save_maintenance_data()
+        await self.async_refresh()
 
     # ==================== Ignore Mode ====================
 
