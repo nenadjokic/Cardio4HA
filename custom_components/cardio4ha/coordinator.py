@@ -20,8 +20,13 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
 from .const import (
     DOMAIN,
+    CURRENT_VERSION,
+    GITHUB_RELEASES_URL,
+    UPDATE_CHECK_INTERVAL,
     STORAGE_KEY,
     STORAGE_VERSION,
     MAINTENANCE_STORAGE_KEY,
@@ -118,6 +123,11 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
         # v1.1.0: Startup delay - wait for HA to fully initialize
         self._startup_time = dt_util.utcnow()
         self._startup_delay = STARTUP_DELAY
+
+        # v1.1.2: GitHub update check
+        self._latest_version: str | None = None
+        self._update_url: str | None = None
+        self._last_update_check: float = 0
 
         # Load saved data
         hass.async_create_task(self._async_load_all_data())
@@ -329,6 +339,42 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
         elapsed = (dt_util.utcnow() - self._startup_time).total_seconds()
         remaining = self._startup_delay - elapsed
         return max(0, int(remaining))
+
+    @property
+    def update_available(self) -> bool:
+        """Check if a newer version is available."""
+        if not self._latest_version:
+            return False
+        try:
+            current = tuple(int(x) for x in CURRENT_VERSION.split("."))
+            latest = tuple(int(x) for x in self._latest_version.split("."))
+            return latest > current
+        except (ValueError, AttributeError):
+            return False
+
+    async def _check_for_updates(self) -> None:
+        """Check GitHub for newer releases (max once per 24h)."""
+        import time
+        from aiohttp import ClientTimeout
+        now = time.monotonic()
+        if now - self._last_update_check < UPDATE_CHECK_INTERVAL:
+            return
+        self._last_update_check = now
+        try:
+            session = async_get_clientsession(self.hass)
+            async with session.get(GITHUB_RELEASES_URL, timeout=ClientTimeout(total=10)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    tag = data.get("tag_name", "")
+                    self._latest_version = tag.lstrip("v")
+                    self._update_url = data.get("html_url", "")
+                    if self.update_available:
+                        _LOGGER.info(
+                            "New Cardio4HA version available: %s (current: %s)",
+                            self._latest_version, CURRENT_VERSION,
+                        )
+        except Exception as err:
+            _LOGGER.debug("Update check failed (non-critical): %s", err)
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from Home Assistant."""
@@ -832,6 +878,9 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
                 unavailable_count, low_battery_count, weak_signal_count,
                 flaky_count, health_score, scan_duration
             )
+
+            # ====== CHECK FOR UPDATES ======
+            await self._check_for_updates()
 
             return result
 

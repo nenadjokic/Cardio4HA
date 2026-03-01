@@ -9,6 +9,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     DOMAIN,
+    CURRENT_VERSION,
     SENSOR_UNAVAILABLE_COUNT,
     SENSOR_LOW_BATTERY_COUNT,
     SENSOR_WEAK_SIGNAL_COUNT,
@@ -60,7 +61,7 @@ class Cardio4HASensor(CoordinatorEntity, SensorEntity):
             "name": "Cardio4HA",
             "manufacturer": "Cardio4HA",
             "model": "Device Health Monitor",
-            "sw_version": "1.1.1",
+            "sw_version": CURRENT_VERSION,
         }
 
         if sensor_type == SENSOR_UNAVAILABLE_COUNT:

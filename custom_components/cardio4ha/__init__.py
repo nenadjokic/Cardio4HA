@@ -14,6 +14,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import (
     DOMAIN,
+    CURRENT_VERSION,
     CONF_UPDATE_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
     SERVICE_MARK_AS_MAINTENANCE,
@@ -38,7 +39,7 @@ PANEL_JS_PATH = Path(__file__).parent / "panel" / "cardio4ha-panel.js"
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Cardio4HA from a config entry."""
-    _LOGGER.info("Setting up Cardio4HA v1.1.1")
+    _LOGGER.info("Setting up Cardio4HA v%s", CURRENT_VERSION)
 
     update_interval = entry.options.get(
         CONF_UPDATE_INTERVAL,
@@ -78,7 +79,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Setup options update listener
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
-    _LOGGER.info("Cardio4HA v1.1.1 setup complete")
+    _LOGGER.info("Cardio4HA v%s setup complete", CURRENT_VERSION)
     return True
 
 
@@ -100,7 +101,7 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
             webcomponent_name="cardio4ha-panel",
             sidebar_title="Cardio4HA",
             sidebar_icon="mdi:heart-pulse",
-            module_url=f"{PANEL_JS_URL}?v=111",
+            module_url=f"{PANEL_JS_URL}?v=112",
             require_admin=False,
             config={},
         )

@@ -3,6 +3,11 @@ from datetime import timedelta
 
 DOMAIN = "cardio4ha"
 NAME = "Cardio4HA"
+CURRENT_VERSION = "1.1.2"
+
+# GitHub Update Check
+GITHUB_RELEASES_URL = "https://api.github.com/repos/nenadjokic/Cardio4HA/releases/latest"
+UPDATE_CHECK_INTERVAL = 86400  # 24 hours
 
 # Configuration - Basic
 CONF_UPDATE_INTERVAL = "update_interval"

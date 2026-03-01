@@ -4,7 +4,7 @@
  * WebSocket-powered, real-time, expandable rows, timeline bars.
  */
 
-const PANEL_VERSION = "1.1.1";
+const PANEL_VERSION = "1.1.2";
 
 // ════════════════════════════════════════════════════════════
 // SECTION 1: Panel Class
@@ -329,7 +329,7 @@ class Cardio4HAPanel extends HTMLElement {
           <ha-icon icon="mdi:heart-pulse" class="header-icon"></ha-icon>
           <div>
             <h1>Cardio4HA</h1>
-            <span class="header-sub">Device Health Monitor v${PANEL_VERSION}</span>
+            <span class="header-sub">Device Health Monitor v${PANEL_VERSION}${this._data && this._data.update_available ? ' <ha-icon icon="mdi:arrow-up-circle" class="header-update-icon" title="Update available"></ha-icon>' : ''}</span>
           </div>
         </div>
         <div class="header-actions">
@@ -346,6 +346,7 @@ class Cardio4HAPanel extends HTMLElement {
       { id: "battery", label: "Battery", icon: "mdi:battery-alert" },
       { id: "signal", label: "Signal", icon: "mdi:signal" },
       { id: "maintenance", label: "Maintenance", icon: "mdi:wrench" },
+      { id: "settings", label: "Settings", icon: "mdi:cog" },
     ];
     return tabs.map(t => `
       <button class="tab ${this._view === t.id ? "active" : ""}" data-view="${t.id}">
@@ -399,6 +400,7 @@ class Cardio4HAPanel extends HTMLElement {
       case "battery": return this._renderBattery();
       case "signal": return this._renderSignal();
       case "maintenance": return this._renderMaintenance();
+      case "settings": return this._renderSettings();
       default: return "";
     }
   }
@@ -412,7 +414,15 @@ class Cardio4HAPanel extends HTMLElement {
     const critical = s.critical_count || 0;
     const flaky = s.flaky_count || 0;
 
+    const updateHtml = d.update_available ? `
+      <div class="update-banner">
+        <ha-icon icon="mdi:package-up"></ha-icon>
+        <span>New version v${this._escapeHtml(d.latest_version)} available!</span>
+        <a href="${this._escapeHtml(d.update_url)}" target="_blank" rel="noopener noreferrer" class="update-link">Download from GitHub</a>
+      </div>` : "";
+
     return `
+      ${updateHtml}
       ${critical > 0 ? this._renderCriticalBanner(critical) : ""}
       <div class="overview-grid">
         <div class="score-card">
@@ -879,6 +889,129 @@ class Cardio4HAPanel extends HTMLElement {
       </div>` : ""}`;
   }
 
+  // ── Settings View ────────────────────────────────────────
+
+  _renderSettings() {
+    const c = (this._data && this._data.config) || {};
+    return `
+      <div class="section-card">
+        <h3>Battery Thresholds</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label for="s-battery-critical">Battery Critical (%)</label>
+            <input type="number" id="s-battery-critical" class="setting-input" min="1" max="100" value="${c.battery_critical ?? 15}">
+          </div>
+          <div class="setting-item">
+            <label for="s-battery-warning">Battery Warning (%)</label>
+            <input type="number" id="s-battery-warning" class="setting-input" min="1" max="100" value="${c.battery_warning ?? 30}">
+          </div>
+          <div class="setting-item">
+            <label for="s-battery-low">Battery Low (%)</label>
+            <input type="number" id="s-battery-low" class="setting-input" min="1" max="100" value="${c.battery_low ?? 50}">
+          </div>
+        </div>
+      </div>
+      <div class="section-card">
+        <h3>Signal Thresholds</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label for="s-lqi-warning">Zigbee LQI Warning</label>
+            <input type="number" id="s-lqi-warning" class="setting-input" min="0" max="255" value="${c.linkquality_warning ?? 100}">
+          </div>
+          <div class="setting-item">
+            <label for="s-rssi-warning">WiFi RSSI Warning (dBm)</label>
+            <input type="number" id="s-rssi-warning" class="setting-input" min="-100" max="0" value="${c.rssi_warning ?? -70}">
+          </div>
+        </div>
+      </div>
+      <div class="section-card">
+        <h3>Unavailable Thresholds</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label for="s-unavail-warning">Warning (seconds)</label>
+            <input type="number" id="s-unavail-warning" class="setting-input" min="60" max="86400" value="${c.unavailable_warning ?? 3600}">
+          </div>
+          <div class="setting-item">
+            <label for="s-unavail-critical">Critical (seconds)</label>
+            <input type="number" id="s-unavail-critical" class="setting-input" min="60" max="172800" value="${c.unavailable_critical ?? 21600}">
+          </div>
+        </div>
+      </div>
+      <div class="section-card">
+        <h3>General</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label for="s-scan-interval">Scan Interval (seconds)</label>
+            <input type="number" id="s-scan-interval" class="setting-input" min="30" max="300" value="${c.update_interval ?? 60}">
+          </div>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button class="save-settings-btn">Save Settings</button>
+        <button class="reset-settings-btn">Reset to Defaults</button>
+      </div>
+      <div class="settings-toast" style="display:none;"></div>`;
+  }
+
+  async _saveSettings() {
+    const root = this.shadowRoot;
+    const getVal = (id) => {
+      const el = root.querySelector(`#${id}`);
+      return el ? parseInt(el.value, 10) : null;
+    };
+
+    const payload = {
+      type: "cardio4ha/update_config",
+      battery_critical: getVal("s-battery-critical"),
+      battery_warning: getVal("s-battery-warning"),
+      battery_low: getVal("s-battery-low"),
+      linkquality_warning: getVal("s-lqi-warning"),
+      rssi_warning: getVal("s-rssi-warning"),
+      unavailable_warning: getVal("s-unavail-warning"),
+      unavailable_critical: getVal("s-unavail-critical"),
+      update_interval: getVal("s-scan-interval"),
+    };
+
+    try {
+      await this._hass.callWS(payload);
+      this._showSettingsToast("Settings saved! Reloading...");
+    } catch (e) {
+      console.error("Save settings failed", e);
+      this._showSettingsToast("Error saving settings");
+    }
+  }
+
+  async _resetSettings() {
+    const defaults = {
+      type: "cardio4ha/update_config",
+      battery_critical: 15,
+      battery_warning: 30,
+      battery_low: 50,
+      linkquality_warning: 100,
+      rssi_warning: -70,
+      unavailable_warning: 3600,
+      unavailable_critical: 21600,
+      update_interval: 60,
+    };
+
+    try {
+      await this._hass.callWS(defaults);
+      this._showSettingsToast("Reset to defaults! Reloading...");
+    } catch (e) {
+      console.error("Reset settings failed", e);
+      this._showSettingsToast("Error resetting settings");
+    }
+  }
+
+  _showSettingsToast(message) {
+    const toast = this.shadowRoot.querySelector(".settings-toast");
+    if (toast) {
+      toast.textContent = message;
+      toast.style.display = "block";
+      setTimeout(() => { toast.style.display = "none"; }, 3000);
+    }
+  }
+
   // ── Filter Bar ────────────────────────────────────────────
 
   _renderFilterBar(data) {
@@ -1034,6 +1167,13 @@ class Cardio4HAPanel extends HTMLElement {
     if (clearAllIgnoreBtn) {
       clearAllIgnoreBtn.addEventListener("click", () => this._clearIgnore(null));
     }
+
+    // Settings buttons
+    const saveBtn = root.querySelector(".save-settings-btn");
+    if (saveBtn) saveBtn.addEventListener("click", () => this._saveSettings());
+
+    const resetBtn = root.querySelector(".reset-settings-btn");
+    if (resetBtn) resetBtn.addEventListener("click", () => this._resetSettings());
 
     // More Info buttons
     root.querySelectorAll(".info-btn").forEach(btn => {
@@ -1709,6 +1849,104 @@ class Cardio4HAPanel extends HTMLElement {
       .clear-ignore-btn { color: var(--success-color, #4caf50); }
       .clear-all-ignore-btn { color: var(--warning-color, #f4b400); border-color: var(--warning-color, #f4b400); }
       .clear-all-ignore-btn:hover { background: rgba(244, 180, 0, 0.1); }
+
+      /* ── Update Banner ── */
+      .update-banner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+        background: linear-gradient(135deg, #f4b40010, #f4b40025);
+        border: 1px solid #f4b40050;
+        border-radius: var(--radius);
+        margin-bottom: 20px;
+        color: #b8860b;
+        font-weight: 500;
+      }
+      .update-banner ha-icon { --mdc-icon-size: 24px; color: #daa520; }
+      .update-link {
+        margin-left: auto;
+        color: #b8860b;
+        font-weight: 600;
+        text-decoration: underline;
+        white-space: nowrap;
+      }
+      .update-link:hover { color: #8b6914; }
+      .header-update-icon {
+        --mdc-icon-size: 16px;
+        color: #daa520;
+        vertical-align: middle;
+        cursor: default;
+      }
+
+      /* ── Settings ── */
+      .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+      }
+      .setting-item {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .setting-item label {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+      .setting-input {
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--primary-background-color, #fafafa);
+        color: var(--text-primary);
+        font-size: 15px;
+        outline: none;
+        transition: border-color 0.2s;
+        width: 100%;
+      }
+      .setting-input:focus { border-color: var(--accent); }
+      .settings-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+      }
+      .save-settings-btn {
+        padding: 10px 28px;
+        border-radius: var(--radius-sm);
+        border: none;
+        background: var(--accent);
+        color: #fff;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .save-settings-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+      .reset-settings-btn {
+        padding: 10px 28px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--card-bg);
+        color: var(--text-primary);
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .reset-settings-btn:hover { background: var(--border); }
+      .settings-toast {
+        margin-top: 16px;
+        padding: 12px 20px;
+        border-radius: var(--radius-sm);
+        background: var(--success, #4caf50);
+        color: #fff;
+        font-weight: 500;
+        text-align: center;
+        animation: slideDown 0.3s ease;
+      }
 
       /* ── Mobile ── */
       @media (max-width: 600px) {

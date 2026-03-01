@@ -12,6 +12,7 @@ from homeassistant.core import HomeAssistant, callback
 
 from .const import (
     DOMAIN,
+    CURRENT_VERSION,
     CONF_BATTERY_CRITICAL,
     CONF_BATTERY_WARNING,
     CONF_BATTERY_LOW,
@@ -44,6 +45,7 @@ def async_register_websocket_api(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, websocket_get_notification_history)
     websocket_api.async_register_command(hass, websocket_set_ignore)
     websocket_api.async_register_command(hass, websocket_clear_ignore)
+    websocket_api.async_register_command(hass, websocket_update_config)
 
 
 def _get_coordinator(hass: HomeAssistant):
@@ -120,6 +122,10 @@ def _build_payload(hass: HomeAssistant, coordinator) -> dict:
         "maintenance": coordinator.maintenance_devices,
         "ignored_devices": coordinator.ignored_devices,
         "config": config,
+        "current_version": CURRENT_VERSION,
+        "update_available": coordinator.update_available,
+        "latest_version": coordinator._latest_version,
+        "update_url": coordinator._update_url,
         "last_update": data.get("last_update"),
         "scan_duration": data.get("scan_duration", 0),
         "startup_remaining": coordinator.startup_remaining,
@@ -368,4 +374,45 @@ async def websocket_clear_ignore(
     else:
         coordinator.clear_all_ignored()
 
+    connection.send_result(msg["id"], {"success": True})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "cardio4ha/update_config",
+    vol.Optional(CONF_BATTERY_CRITICAL): int,
+    vol.Optional(CONF_BATTERY_WARNING): int,
+    vol.Optional(CONF_BATTERY_LOW): int,
+    vol.Optional(CONF_LINKQUALITY_WARNING): int,
+    vol.Optional(CONF_RSSI_WARNING): int,
+    vol.Optional(CONF_UNAVAILABLE_WARNING): int,
+    vol.Optional(CONF_UNAVAILABLE_CRITICAL): int,
+    vol.Optional(CONF_UPDATE_INTERVAL): int,
+})
+@websocket_api.async_response
+async def websocket_update_config(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict,
+) -> None:
+    """Update configuration thresholds from the panel."""
+    coordinator = _get_coordinator(hass)
+    if not coordinator:
+        connection.send_error(msg["id"], "not_found", "Coordinator not found")
+        return
+
+    entry = coordinator.entry
+    new_options = dict(entry.options)
+
+    config_keys = [
+        CONF_BATTERY_CRITICAL, CONF_BATTERY_WARNING, CONF_BATTERY_LOW,
+        CONF_LINKQUALITY_WARNING, CONF_RSSI_WARNING,
+        CONF_UNAVAILABLE_WARNING, CONF_UNAVAILABLE_CRITICAL,
+        CONF_UPDATE_INTERVAL,
+    ]
+
+    for key in config_keys:
+        if key in msg:
+            new_options[key] = msg[key]
+
+    hass.config_entries.async_update_entry(entry, options=new_options)
     connection.send_result(msg["id"], {"success": True})
