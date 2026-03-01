@@ -4,7 +4,7 @@
  * WebSocket-powered, real-time, expandable rows, timeline bars.
  */
 
-const PANEL_VERSION = "1.1.3";
+const PANEL_VERSION = "1.1.4";
 
 // ════════════════════════════════════════════════════════════
 // SECTION 1: Panel Class
@@ -1008,7 +1008,8 @@ class Cardio4HAPanel extends HTMLElement {
 
     try {
       await this._hass.callWS(payload);
-      this._showSettingsToast("Settings saved! Reloading...");
+      this._showSettingsToast("Settings saved! Reconnecting...");
+      this._reconnectAfterReload();
     } catch (e) {
       console.error("Save settings failed", e);
       this._showSettingsToast("Error saving settings");
@@ -1030,11 +1031,29 @@ class Cardio4HAPanel extends HTMLElement {
 
     try {
       await this._hass.callWS(defaults);
-      this._showSettingsToast("Reset to defaults! Reloading...");
+      this._showSettingsToast("Reset to defaults! Reconnecting...");
+      this._reconnectAfterReload();
     } catch (e) {
       console.error("Reset settings failed", e);
       this._showSettingsToast("Error resetting settings");
     }
+  }
+
+  async _reconnectAfterReload() {
+    this._unsubscribe();
+    for (let i = 0; i < 10; i++) {
+      await new Promise(r => setTimeout(r, 1500));
+      try {
+        this._unsub = await this._hass.connection.subscribeMessage(
+          (msg) => this._handleUpdate(msg),
+          { type: "cardio4ha/subscribe" }
+        );
+        this._connected = true;
+        this._showSettingsToast("Settings applied!");
+        return;
+      } catch (e) { /* integration still reloading */ }
+    }
+    this._showSettingsToast("Reload timed out. Please refresh the page.");
   }
 
   _showSettingsToast(message) {
@@ -2087,4 +2106,6 @@ class Cardio4HAPanel extends HTMLElement {
   }
 }
 
-customElements.define("cardio4ha-panel", Cardio4HAPanel);
+if (!customElements.get("cardio4ha-panel")) {
+  customElements.define("cardio4ha-panel", Cardio4HAPanel);
+}
