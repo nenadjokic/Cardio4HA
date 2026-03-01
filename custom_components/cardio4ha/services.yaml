@@ -1,0 +1,46 @@
+# Cardio4HA Services
+
+mark_as_maintenance:
+  description: Mark a device as under maintenance (temporarily ignore issues)
+  fields:
+    entity_id:
+      description: Entity ID of the device to mark as maintenance
+      required: true
+      example: "sensor.living_room_motion"
+      selector:
+        entity:
+          multiple: false
+    duration:
+      description: Duration in seconds (default: 3600 = 1 hour)
+      required: false
+      default: 3600
+      example: "3600"
+      selector:
+        number:
+          min: 60
+          max: 86400
+          unit_of_measurement: "seconds"
+
+clear_history:
+  description: Clear unavailable tracking history
+  fields:
+    entity_id:
+      description: Optional specific entity to clear, or all if omitted
+      required: false
+      example: "sensor.living_room_motion"
+      selector:
+        entity:
+          multiple: false
+
+force_scan:
+  description: Force an immediate device scan
+
+clear_device_history:
+  description: Clear device event history (timeline, battery readings, signal readings)
+  fields:
+    device_key:
+      description: Optional device key to clear history for, or all if omitted
+      required: false
+      example: "abc123def456"
+      selector:
+        text:

@@ -16,6 +16,8 @@ from .const import (
     SENSOR_WARNING_COUNT,
     SENSOR_HEALTHY_COUNT,
     SENSOR_LAST_SCAN_DURATION,
+    SENSOR_HEALTH_SCORE,
+    SENSOR_FLAKY_DEVICES_COUNT,
 )
 from .coordinator import Cardio4HACoordinator
 
@@ -36,6 +38,8 @@ async def async_setup_entry(
         Cardio4HASensor(coordinator, SENSOR_WARNING_COUNT),
         Cardio4HASensor(coordinator, SENSOR_HEALTHY_COUNT),
         Cardio4HASensor(coordinator, SENSOR_LAST_SCAN_DURATION),
+        Cardio4HASensor(coordinator, SENSOR_HEALTH_SCORE),
+        Cardio4HASensor(coordinator, SENSOR_FLAKY_DEVICES_COUNT),
     ]
 
     async_add_entities(sensors)
@@ -51,16 +55,14 @@ class Cardio4HASensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{DOMAIN}_{sensor_type}"
         self._attr_has_entity_name = True
 
-        # Device info - connects sensors to integration
         self._attr_device_info = {
             "identifiers": {(DOMAIN, coordinator.entry.entry_id)},
             "name": "Cardio4HA",
             "manufacturer": "Cardio4HA",
             "model": "Device Health Monitor",
-            "sw_version": "0.1.7",
+            "sw_version": "1.0.0",
         }
 
-        # Set sensor properties based on type
         if sensor_type == SENSOR_UNAVAILABLE_COUNT:
             self._attr_name = "Unavailable Devices"
             self._attr_icon = "mdi:alert-circle-outline"
@@ -84,6 +86,14 @@ class Cardio4HASensor(CoordinatorEntity, SensorEntity):
             self._attr_icon = "mdi:timer-outline"
             self._attr_native_unit_of_measurement = "s"
             self._attr_state_class = SensorStateClass.MEASUREMENT
+        elif sensor_type == SENSOR_HEALTH_SCORE:
+            self._attr_name = "Health Score"
+            self._attr_icon = "mdi:heart-pulse"
+            self._attr_native_unit_of_measurement = "%"
+            self._attr_state_class = SensorStateClass.MEASUREMENT
+        elif sensor_type == SENSOR_FLAKY_DEVICES_COUNT:
+            self._attr_name = "Flaky Devices"
+            self._attr_icon = "mdi:swap-horizontal"
 
     @property
     def native_value(self) -> int | float | None:
@@ -105,6 +115,10 @@ class Cardio4HASensor(CoordinatorEntity, SensorEntity):
             return self.coordinator.data["summary"]["healthy_count"]
         elif self._sensor_type == SENSOR_LAST_SCAN_DURATION:
             return round(self.coordinator.data.get("scan_duration", 0), 2)
+        elif self._sensor_type == SENSOR_HEALTH_SCORE:
+            return self.coordinator.data.get("health_score", 100)
+        elif self._sensor_type == SENSOR_FLAKY_DEVICES_COUNT:
+            return self.coordinator.data.get("flaky_count", 0)
 
         return None
 
@@ -115,22 +129,26 @@ class Cardio4HASensor(CoordinatorEntity, SensorEntity):
             return {}
 
         if self._sensor_type == SENSOR_UNAVAILABLE_COUNT:
-            devices = self.coordinator.data["unavailable"][:10]  # Top 10
+            devices = self.coordinator.data["unavailable"][:10]
             return {
                 "devices": devices,
                 "count": len(self.coordinator.data["unavailable"]),
             }
         elif self._sensor_type == SENSOR_LOW_BATTERY_COUNT:
-            devices = self.coordinator.data["low_battery"][:10]  # Top 10
+            devices = self.coordinator.data["low_battery"][:10]
             return {
                 "devices": devices,
                 "count": len(self.coordinator.data["low_battery"]),
             }
         elif self._sensor_type == SENSOR_WEAK_SIGNAL_COUNT:
-            devices = self.coordinator.data["weak_signal"][:10]  # Top 10
+            devices = self.coordinator.data["weak_signal"][:10]
             return {
                 "devices": devices,
                 "count": len(self.coordinator.data["weak_signal"]),
+            }
+        elif self._sensor_type == SENSOR_FLAKY_DEVICES_COUNT:
+            return {
+                "devices": self.coordinator.data.get("flaky_devices", []),
             }
 
         return {}

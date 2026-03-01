@@ -20,13 +20,38 @@
   "options": {
     "step": {
       "init": {
-        "title": "Cardio4HA Options",
-        "description": "Configure thresholds and monitoring settings.",
+        "title": "Cardio4HA - Thresholds & Exclusions",
+        "description": "Configure monitoring thresholds and device exclusions.",
         "data": {
           "update_interval": "Update Interval (seconds)",
           "battery_critical": "Battery Critical Level (%)",
           "battery_warning": "Battery Warning Level (%)",
-          "battery_low": "Battery Low Level (%)"
+          "battery_low": "Battery Low Level (%)",
+          "linkquality_warning": "Zigbee Link Quality Warning",
+          "rssi_warning": "WiFi RSSI Warning (dBm)",
+          "unavailable_warning": "Unavailable Warning (seconds)",
+          "unavailable_critical": "Unavailable Critical (seconds)",
+          "exclude_entity_wildcards": "Exclude Entity Wildcards (comma-separated)",
+          "exclude_integrations": "Exclude Integrations",
+          "exclude_areas": "Exclude Areas",
+          "monitor_zigbee2mqtt": "Always Monitor Zigbee2MQTT"
+        }
+      },
+      "notifications": {
+        "title": "Cardio4HA - Notifications",
+        "description": "Configure smart notifications and history settings.",
+        "data": {
+          "notify_service": "Notification Service",
+          "notify_instant_enabled": "Enable Instant Alerts",
+          "notify_offline_minutes": "Offline Alert Threshold (minutes)",
+          "notify_battery_critical_level": "Battery Critical Alert Level (%)",
+          "notify_mass_offline_threshold": "Mass Offline Threshold (devices)",
+          "notify_daily_digest": "Enable Daily Digest",
+          "notify_daily_digest_time": "Daily Digest Time (HH:MM)",
+          "notify_recovery_enabled": "Enable Recovery Notifications",
+          "notify_rate_limit": "Max Notifications Per Hour",
+          "notify_device_cooldown": "Device Cooldown (minutes)",
+          "history_retention_days": "History Retention (days)"
         }
       }
     }
