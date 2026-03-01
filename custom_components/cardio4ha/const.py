@@ -3,7 +3,7 @@ from datetime import timedelta
 
 DOMAIN = "cardio4ha"
 NAME = "Cardio4HA"
-CURRENT_VERSION = "1.1.2"
+CURRENT_VERSION = "1.1.3"
 
 # GitHub Update Check
 GITHUB_RELEASES_URL = "https://api.github.com/repos/nenadjokic/Cardio4HA/releases/latest"

@@ -4,7 +4,7 @@
  * WebSocket-powered, real-time, expandable rows, timeline bars.
  */
 
-const PANEL_VERSION = "1.1.2";
+const PANEL_VERSION = "1.1.3";
 
 // ════════════════════════════════════════════════════════════
 // SECTION 1: Panel Class
@@ -29,6 +29,7 @@ class Cardio4HAPanel extends HTMLElement {
     this._timelineCache = {};
     this._flakyKeys = new Set();
     this._startupTimer = null;
+    this._criticalExpanded = false;
   }
 
   set hass(hass) {
@@ -442,11 +443,44 @@ class Cardio4HAPanel extends HTMLElement {
   }
 
   _renderCriticalBanner(count) {
+    const d = this._data;
+    const criticals = [];
+    (d.unavailable || []).forEach(dev => {
+      if (dev.severity === "critical") criticals.push({ ...dev, issue: "Unavailable", detail: dev.duration_human || "Unknown duration" });
+    });
+    (d.low_battery || []).forEach(dev => {
+      if (dev.severity === "critical") criticals.push({ ...dev, issue: "Low Battery", detail: dev.battery_level + "%" });
+    });
+    (d.weak_signal || []).forEach(dev => {
+      if (dev.severity === "critical") criticals.push({ ...dev, issue: "Weak Signal", detail: dev.signal_type === "zigbee" ? "LQI: " + dev.linkquality : "RSSI: " + dev.rssi + " dBm" });
+    });
+
+    const expanded = this._criticalExpanded;
+    const chevron = expanded ? "mdi:chevron-up" : "mdi:chevron-down";
+
+    let listHtml = "";
+    if (expanded && criticals.length > 0) {
+      listHtml = `<div class="critical-list">
+        ${criticals.map(c => `
+          <div class="critical-item" data-entity="${this._escapeHtml(c.entity_id || "")}">
+            <div class="critical-item-name">${this._escapeHtml(c.name)}</div>
+            <div class="critical-item-detail">
+              <span class="critical-item-issue">${c.issue}</span>
+              <span class="critical-item-value">${this._escapeHtml(c.detail)}</span>
+              ${c.area ? `<span class="critical-item-area">${this._escapeHtml(c.area)}</span>` : ""}
+            </div>
+          </div>
+        `).join("")}
+      </div>`;
+    }
+
     return `
-      <div class="critical-banner">
+      <div class="critical-banner critical-banner-clickable${expanded ? " critical-banner-expanded" : ""}" id="critical-banner-toggle">
         <ha-icon icon="mdi:alert"></ha-icon>
         <span>${count} critical issue${count !== 1 ? "s" : ""} require attention</span>
-      </div>`;
+        <ha-icon icon="${chevron}" class="critical-chevron"></ha-icon>
+      </div>
+      ${listHtml}`;
   }
 
   _renderHealthRing(score) {
@@ -1093,6 +1127,27 @@ class Cardio4HAPanel extends HTMLElement {
   _attachContentEvents() {
     const root = this.shadowRoot;
 
+    // Critical banner toggle
+    const critBanner = root.querySelector("#critical-banner-toggle");
+    if (critBanner) {
+      critBanner.addEventListener("click", () => {
+        this._criticalExpanded = !this._criticalExpanded;
+        this._updateDOM();
+      });
+    }
+
+    // Critical items - click to open entity more-info
+    root.querySelectorAll(".critical-item[data-entity]").forEach(el => {
+      el.addEventListener("click", () => {
+        const entityId = el.dataset.entity;
+        if (entityId && this._hass) {
+          const event = new Event("hass-more-info", { bubbles: true, composed: true });
+          event.detail = { entityId };
+          this.dispatchEvent(event);
+        }
+      });
+    });
+
     // Expandable rows
     root.querySelectorAll("[data-expand]").forEach(el => {
       el.addEventListener("click", (e) => {
@@ -1443,6 +1498,60 @@ class Cardio4HAPanel extends HTMLElement {
         font-weight: 500;
       }
       .critical-banner ha-icon { --mdc-icon-size: 24px; }
+      .critical-banner-clickable { cursor: pointer; user-select: none; }
+      .critical-banner-clickable:hover { background: linear-gradient(135deg, #db443718, #db443730); }
+      .critical-banner-expanded { border-radius: var(--radius) var(--radius) 0 0; margin-bottom: 0; }
+      .critical-chevron { margin-left: auto; --mdc-icon-size: 20px; opacity: 0.7; }
+
+      .critical-list {
+        background: var(--card-background-color, #fff);
+        border: 1px solid #db443730;
+        border-top: none;
+        border-radius: 0 0 var(--radius) var(--radius);
+        margin-bottom: 20px;
+        padding: 8px 0;
+      }
+      .critical-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 20px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .critical-item:hover { background: var(--secondary-background-color, #f5f5f5); }
+      .critical-item-name {
+        font-weight: 500;
+        color: var(--primary-text-color);
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .critical-item-detail {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+        font-size: 0.85em;
+      }
+      .critical-item-issue {
+        background: #db443720;
+        color: var(--error-color, #db4437);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 500;
+        font-size: 0.85em;
+      }
+      .critical-item-value {
+        color: var(--secondary-text-color);
+      }
+      .critical-item-area {
+        color: var(--secondary-text-color);
+        opacity: 0.7;
+        font-size: 0.85em;
+      }
 
       /* ── Overview ── */
       .overview-grid {
