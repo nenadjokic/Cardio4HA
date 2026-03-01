@@ -101,7 +101,6 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
             module_url=PANEL_JS_URL,
             require_admin=False,
             config={},
-            update=True,
         )
         _LOGGER.info("Registered Cardio4HA sidebar panel")
     except Exception:
