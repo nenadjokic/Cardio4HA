@@ -117,9 +117,6 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
         # v1.0.0: Track previous unavailable keys for state transition detection
         self._previous_unavailable_keys: set[str] = set()
 
-        # v1.0.0: Notification engine (set by __init__.py after creation)
-        self.notification_engine = None
-
         # v1.1.0: Startup delay - wait for HA to fully initialize
         self._startup_time = dt_util.utcnow()
         self._startup_delay = STARTUP_DELAY
@@ -864,13 +861,6 @@ class Cardio4HACoordinator(DataUpdateCoordinator):
             await self.async_save_unavailable_data()
             self.device_history.purge_old_data(retention_days)
             await self.device_history.async_save()
-
-            # ====== TRIGGER NOTIFICATIONS ======
-            if self.notification_engine:
-                try:
-                    await self.notification_engine.process_scan_results(result)
-                except Exception as err:
-                    _LOGGER.error("Error processing notifications: %s", err)
 
             _LOGGER.info(
                 "Scan complete: %d unavailable, %d low battery, %d weak signal, "

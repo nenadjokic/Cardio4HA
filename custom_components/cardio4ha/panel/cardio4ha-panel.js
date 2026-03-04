@@ -437,7 +437,6 @@ class Cardio4HAPanel extends HTMLElement {
           ${this._renderStatCard("Flaky", flaky, "mdi:swap-horizontal", "#9c27b0")}
         </div>
       </div>
-      ${this._renderRecentNotifications()}
       ${flaky > 0 ? this._renderFlakyOverview() : ""}
     `;
   }
@@ -516,26 +515,6 @@ class Cardio4HAPanel extends HTMLElement {
       </div>`;
   }
 
-  _renderRecentNotifications() {
-    const notifs = this._data.notification_history || [];
-    if (notifs.length === 0) return "";
-    const recent = notifs.slice(-5).reverse();
-    return `
-      <div class="section-card">
-        <h3>Recent Notifications</h3>
-        <div class="notif-list">
-          ${recent.map(n => `
-            <div class="notif-item notif-${n.type}">
-              <ha-icon icon="${this._getNotifIcon(n.type)}"></ha-icon>
-              <div class="notif-content">
-                <div class="notif-title">${this._escapeHtml(n.title)}</div>
-                <div class="notif-time">${this._formatTime(n.ts)}</div>
-              </div>
-            </div>
-          `).join("")}
-        </div>
-      </div>`;
-  }
 
   _renderFlakyOverview() {
     const flaky = this._data.flaky_devices || [];
@@ -1088,16 +1067,6 @@ class Cardio4HAPanel extends HTMLElement {
 
   // ── Helpers ───────────────────────────────────────────────
 
-  _getNotifIcon(type) {
-    const icons = {
-      device_offline: "mdi:alert-circle",
-      battery_critical: "mdi:battery-alert",
-      mass_offline: "mdi:alert-octagon",
-      device_recovered: "mdi:check-circle",
-      daily_digest: "mdi:clipboard-text",
-    };
-    return icons[type] || "mdi:bell";
-  }
 
   _formatTime(ts) {
     if (!ts) return "Unknown";
@@ -1654,29 +1623,6 @@ class Cardio4HAPanel extends HTMLElement {
         font-weight: 600;
         margin-bottom: 16px;
       }
-
-      /* ── Notifications ── */
-      .notif-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .notif-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        border-radius: var(--radius-sm);
-        background: rgba(0,0,0,0.02);
-      }
-      .notif-item ha-icon { --mdc-icon-size: 20px; color: var(--text-secondary); }
-      .notif-device_offline ha-icon { color: var(--error); }
-      .notif-battery_critical ha-icon { color: var(--warning); }
-      .notif-device_recovered ha-icon { color: var(--success); }
-      .notif-mass_offline ha-icon { color: var(--error); }
-      .notif-content { flex: 1; min-width: 0; }
-      .notif-title { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .notif-time { font-size: 12px; color: var(--text-secondary); }
 
       /* ── Flaky ── */
       .flaky-list {

@@ -42,7 +42,6 @@ def async_register_websocket_api(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, websocket_clear_maintenance)
     websocket_api.async_register_command(hass, websocket_clear_history)
     websocket_api.async_register_command(hass, websocket_get_device_timeline)
-    websocket_api.async_register_command(hass, websocket_get_notification_history)
     websocket_api.async_register_command(hass, websocket_set_ignore)
     websocket_api.async_register_command(hass, websocket_clear_ignore)
     websocket_api.async_register_command(hass, websocket_update_config)
@@ -94,11 +93,6 @@ def _build_payload(hass: HomeAssistant, coordinator) -> dict:
         "update_interval": _cfg(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
     }
 
-    # Get notification history from engine
-    notification_history = []
-    if coordinator.notification_engine:
-        notification_history = coordinator.notification_engine.notification_history[-20:]
-
     payload = {
         "unavailable": data.get("unavailable", []),
         "low_battery": data.get("low_battery", []),
@@ -118,7 +112,6 @@ def _build_payload(hass: HomeAssistant, coordinator) -> dict:
         "flaky_devices": data.get("flaky_devices", []),
         "flaky_device_keys": data.get("flaky_device_keys", set()),
         "battery_predictions": data.get("battery_predictions", {}),
-        "notification_history": notification_history,
         "maintenance": coordinator.maintenance_devices,
         "ignored_devices": coordinator.ignored_devices,
         "config": config,
@@ -306,28 +299,6 @@ async def websocket_get_device_timeline(
         "signal_readings": signal_readings,
         "battery_prediction": battery_prediction,
     })
-
-
-@websocket_api.websocket_command({
-    vol.Required("type"): "cardio4ha/get_notification_history",
-})
-@websocket_api.async_response
-async def websocket_get_notification_history(
-    hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
-    msg: dict,
-) -> None:
-    """Get full notification history."""
-    coordinator = _get_coordinator(hass)
-    if not coordinator:
-        connection.send_error(msg["id"], "not_found", "Coordinator not found")
-        return
-
-    history = []
-    if coordinator.notification_engine:
-        history = coordinator.notification_engine.notification_history
-
-    connection.send_result(msg["id"], {"notifications": history})
 
 
 @websocket_api.websocket_command({

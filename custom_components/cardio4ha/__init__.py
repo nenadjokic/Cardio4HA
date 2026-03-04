@@ -25,7 +25,6 @@ from .const import (
     SERVICE_CLEAR_IGNORE,
 )
 from .coordinator import Cardio4HACoordinator
-from .notifications import NotificationEngine
 from .websocket_api import async_register_websocket_api
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,10 +51,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry,
         update_interval=timedelta(seconds=update_interval)
     )
-
-    # Create notification engine
-    notification_engine = NotificationEngine(hass, coordinator._get_config_value)
-    coordinator.notification_engine = notification_engine
 
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
@@ -123,11 +118,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await coordinator.async_save_unavailable_data()
         await coordinator.async_save_ignore_data()
         await coordinator.device_history.async_save()
-        if coordinator.notification_engine:
-            coordinator.notification_engine.unload()
 
-    # Remove sidebar panel if no more entries
-    if not hass.data.get(DOMAIN):
+    # Remove sidebar panel only on true unload (not during reload)
+    if not hass.data.get(DOMAIN) and not hass.data.get(f"{DOMAIN}_reloading"):
         try:
             async_remove_panel(hass, DOMAIN)
         except Exception:
@@ -138,9 +131,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Reload config entry."""
+    """Reload config entry (options changed)."""
+    # Mark as reloading so unload won't remove the sidebar panel
+    hass.data[f"{DOMAIN}_reloading"] = True
     await async_unload_entry(hass, entry)
     await async_setup_entry(hass, entry)
+    hass.data.pop(f"{DOMAIN}_reloading", None)
 
 
 def _get_coordinator(hass: HomeAssistant) -> Cardio4HACoordinator | None:

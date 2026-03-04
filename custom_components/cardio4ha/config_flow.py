@@ -26,16 +26,6 @@ from .const import (
     CONF_EXCLUDE_INTEGRATIONS,
     CONF_EXCLUDE_AREAS,
     CONF_MONITOR_ZIGBEE2MQTT,
-    CONF_NOTIFY_SERVICE,
-    CONF_NOTIFY_INSTANT_ENABLED,
-    CONF_NOTIFY_OFFLINE_MINUTES,
-    CONF_NOTIFY_BATTERY_CRITICAL_LEVEL,
-    CONF_NOTIFY_MASS_OFFLINE_THRESHOLD,
-    CONF_NOTIFY_DAILY_DIGEST,
-    CONF_NOTIFY_DAILY_DIGEST_TIME,
-    CONF_NOTIFY_RECOVERY_ENABLED,
-    CONF_NOTIFY_RATE_LIMIT,
-    CONF_NOTIFY_DEVICE_COOLDOWN,
     CONF_HISTORY_RETENTION_DAYS,
     DEFAULT_UPDATE_INTERVAL,
     DEFAULT_BATTERY_CRITICAL,
@@ -49,16 +39,6 @@ from .const import (
     DEFAULT_EXCLUDE_INTEGRATIONS,
     DEFAULT_EXCLUDE_AREAS,
     DEFAULT_MONITOR_ZIGBEE2MQTT,
-    DEFAULT_NOTIFY_SERVICE,
-    DEFAULT_NOTIFY_INSTANT_ENABLED,
-    DEFAULT_NOTIFY_OFFLINE_MINUTES,
-    DEFAULT_NOTIFY_BATTERY_CRITICAL_LEVEL,
-    DEFAULT_NOTIFY_MASS_OFFLINE_THRESHOLD,
-    DEFAULT_NOTIFY_DAILY_DIGEST,
-    DEFAULT_NOTIFY_DAILY_DIGEST_TIME,
-    DEFAULT_NOTIFY_RECOVERY_ENABLED,
-    DEFAULT_NOTIFY_RATE_LIMIT,
-    DEFAULT_NOTIFY_DEVICE_COOLDOWN,
     DEFAULT_HISTORY_RETENTION_DAYS,
     MIN_UPDATE_INTERVAL,
     MAX_UPDATE_INTERVAL,
@@ -96,16 +76,6 @@ class Cardio4HAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_EXCLUDE_INTEGRATIONS: DEFAULT_EXCLUDE_INTEGRATIONS,
                     CONF_EXCLUDE_AREAS: DEFAULT_EXCLUDE_AREAS,
                     CONF_MONITOR_ZIGBEE2MQTT: DEFAULT_MONITOR_ZIGBEE2MQTT,
-                    CONF_NOTIFY_SERVICE: DEFAULT_NOTIFY_SERVICE,
-                    CONF_NOTIFY_INSTANT_ENABLED: DEFAULT_NOTIFY_INSTANT_ENABLED,
-                    CONF_NOTIFY_OFFLINE_MINUTES: DEFAULT_NOTIFY_OFFLINE_MINUTES,
-                    CONF_NOTIFY_BATTERY_CRITICAL_LEVEL: DEFAULT_NOTIFY_BATTERY_CRITICAL_LEVEL,
-                    CONF_NOTIFY_MASS_OFFLINE_THRESHOLD: DEFAULT_NOTIFY_MASS_OFFLINE_THRESHOLD,
-                    CONF_NOTIFY_DAILY_DIGEST: DEFAULT_NOTIFY_DAILY_DIGEST,
-                    CONF_NOTIFY_DAILY_DIGEST_TIME: DEFAULT_NOTIFY_DAILY_DIGEST_TIME,
-                    CONF_NOTIFY_RECOVERY_ENABLED: DEFAULT_NOTIFY_RECOVERY_ENABLED,
-                    CONF_NOTIFY_RATE_LIMIT: DEFAULT_NOTIFY_RATE_LIMIT,
-                    CONF_NOTIFY_DEVICE_COOLDOWN: DEFAULT_NOTIFY_DEVICE_COOLDOWN,
                     CONF_HISTORY_RETENTION_DAYS: DEFAULT_HISTORY_RETENTION_DAYS,
                 },
             )
@@ -133,17 +103,6 @@ class Cardio4HAConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if config_entry.version < 2:
             new_options = {**config_entry.options}
-            # Set defaults for all new v1.0.0 notification/history options
-            new_options.setdefault(CONF_NOTIFY_SERVICE, DEFAULT_NOTIFY_SERVICE)
-            new_options.setdefault(CONF_NOTIFY_INSTANT_ENABLED, DEFAULT_NOTIFY_INSTANT_ENABLED)
-            new_options.setdefault(CONF_NOTIFY_OFFLINE_MINUTES, DEFAULT_NOTIFY_OFFLINE_MINUTES)
-            new_options.setdefault(CONF_NOTIFY_BATTERY_CRITICAL_LEVEL, DEFAULT_NOTIFY_BATTERY_CRITICAL_LEVEL)
-            new_options.setdefault(CONF_NOTIFY_MASS_OFFLINE_THRESHOLD, DEFAULT_NOTIFY_MASS_OFFLINE_THRESHOLD)
-            new_options.setdefault(CONF_NOTIFY_DAILY_DIGEST, DEFAULT_NOTIFY_DAILY_DIGEST)
-            new_options.setdefault(CONF_NOTIFY_DAILY_DIGEST_TIME, DEFAULT_NOTIFY_DAILY_DIGEST_TIME)
-            new_options.setdefault(CONF_NOTIFY_RECOVERY_ENABLED, DEFAULT_NOTIFY_RECOVERY_ENABLED)
-            new_options.setdefault(CONF_NOTIFY_RATE_LIMIT, DEFAULT_NOTIFY_RATE_LIMIT)
-            new_options.setdefault(CONF_NOTIFY_DEVICE_COOLDOWN, DEFAULT_NOTIFY_DEVICE_COOLDOWN)
             new_options.setdefault(CONF_HISTORY_RETENTION_DAYS, DEFAULT_HISTORY_RETENTION_DAYS)
 
             config_entry.version = 2
@@ -178,9 +137,7 @@ class Cardio4HAOptionsFlow(config_entries.OptionsFlow):
                 else:
                     user_input[CONF_EXCLUDE_ENTITY_WILDCARDS] = []
 
-            # Store step 1 data and proceed to notifications step
-            self._step1_data = user_input
-            return await self.async_step_notifications()
+            return self.async_create_entry(title="", data=user_input)
 
         options = self.config_entry.options
 
@@ -278,88 +235,3 @@ class Cardio4HAOptionsFlow(config_entries.OptionsFlow):
             ),
         )
 
-    async def async_step_notifications(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Step 2: Notification settings."""
-        if user_input is not None:
-            # Merge step 1 + step 2 data
-            merged = {**self._step1_data, **user_input}
-            return self.async_create_entry(title="", data=merged)
-
-        options = self.config_entry.options
-
-        current_service = options.get(CONF_NOTIFY_SERVICE, DEFAULT_NOTIFY_SERVICE)
-        current_instant = options.get(CONF_NOTIFY_INSTANT_ENABLED, DEFAULT_NOTIFY_INSTANT_ENABLED)
-        current_offline_min = options.get(CONF_NOTIFY_OFFLINE_MINUTES, DEFAULT_NOTIFY_OFFLINE_MINUTES)
-        current_batt_crit = options.get(CONF_NOTIFY_BATTERY_CRITICAL_LEVEL, DEFAULT_NOTIFY_BATTERY_CRITICAL_LEVEL)
-        current_mass = options.get(CONF_NOTIFY_MASS_OFFLINE_THRESHOLD, DEFAULT_NOTIFY_MASS_OFFLINE_THRESHOLD)
-        current_digest = options.get(CONF_NOTIFY_DAILY_DIGEST, DEFAULT_NOTIFY_DAILY_DIGEST)
-        current_digest_time = options.get(CONF_NOTIFY_DAILY_DIGEST_TIME, DEFAULT_NOTIFY_DAILY_DIGEST_TIME)
-        current_recovery = options.get(CONF_NOTIFY_RECOVERY_ENABLED, DEFAULT_NOTIFY_RECOVERY_ENABLED)
-        current_rate = options.get(CONF_NOTIFY_RATE_LIMIT, DEFAULT_NOTIFY_RATE_LIMIT)
-        current_cooldown = options.get(CONF_NOTIFY_DEVICE_COOLDOWN, DEFAULT_NOTIFY_DEVICE_COOLDOWN)
-        current_retention = options.get(CONF_HISTORY_RETENTION_DAYS, DEFAULT_HISTORY_RETENTION_DAYS)
-
-        return self.async_show_form(
-            step_id="notifications",
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(
-                        CONF_NOTIFY_SERVICE,
-                        default=current_service,
-                        description={"suggested_value": current_service},
-                    ): str,
-                    vol.Optional(
-                        CONF_NOTIFY_INSTANT_ENABLED,
-                        default=current_instant,
-                        description={"suggested_value": current_instant},
-                    ): bool,
-                    vol.Optional(
-                        CONF_NOTIFY_OFFLINE_MINUTES,
-                        default=current_offline_min,
-                        description={"suggested_value": current_offline_min},
-                    ): vol.All(cv.positive_int, vol.Range(min=1, max=1440)),
-                    vol.Optional(
-                        CONF_NOTIFY_BATTERY_CRITICAL_LEVEL,
-                        default=current_batt_crit,
-                        description={"suggested_value": current_batt_crit},
-                    ): vol.All(cv.positive_int, vol.Range(min=1, max=50)),
-                    vol.Optional(
-                        CONF_NOTIFY_MASS_OFFLINE_THRESHOLD,
-                        default=current_mass,
-                        description={"suggested_value": current_mass},
-                    ): vol.All(cv.positive_int, vol.Range(min=2, max=50)),
-                    vol.Optional(
-                        CONF_NOTIFY_DAILY_DIGEST,
-                        default=current_digest,
-                        description={"suggested_value": current_digest},
-                    ): bool,
-                    vol.Optional(
-                        CONF_NOTIFY_DAILY_DIGEST_TIME,
-                        default=current_digest_time,
-                        description={"suggested_value": current_digest_time},
-                    ): str,
-                    vol.Optional(
-                        CONF_NOTIFY_RECOVERY_ENABLED,
-                        default=current_recovery,
-                        description={"suggested_value": current_recovery},
-                    ): bool,
-                    vol.Optional(
-                        CONF_NOTIFY_RATE_LIMIT,
-                        default=current_rate,
-                        description={"suggested_value": current_rate},
-                    ): vol.All(cv.positive_int, vol.Range(min=1, max=100)),
-                    vol.Optional(
-                        CONF_NOTIFY_DEVICE_COOLDOWN,
-                        default=current_cooldown,
-                        description={"suggested_value": current_cooldown},
-                    ): vol.All(cv.positive_int, vol.Range(min=5, max=1440)),
-                    vol.Optional(
-                        CONF_HISTORY_RETENTION_DAYS,
-                        default=current_retention,
-                        description={"suggested_value": current_retention},
-                    ): vol.All(cv.positive_int, vol.Range(min=1, max=90)),
-                }
-            ),
-        )

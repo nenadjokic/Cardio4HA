@@ -28,18 +28,6 @@ CONF_EXCLUDE_INTEGRATIONS = "exclude_integrations"
 CONF_EXCLUDE_AREAS = "exclude_areas"
 CONF_MONITOR_ZIGBEE2MQTT = "monitor_zigbee2mqtt"
 
-# Configuration - Notifications
-CONF_NOTIFY_SERVICE = "notify_service"
-CONF_NOTIFY_INSTANT_ENABLED = "notify_instant_enabled"
-CONF_NOTIFY_OFFLINE_MINUTES = "notify_offline_minutes"
-CONF_NOTIFY_BATTERY_CRITICAL_LEVEL = "notify_battery_critical_level"
-CONF_NOTIFY_MASS_OFFLINE_THRESHOLD = "notify_mass_offline_threshold"
-CONF_NOTIFY_DAILY_DIGEST = "notify_daily_digest"
-CONF_NOTIFY_DAILY_DIGEST_TIME = "notify_daily_digest_time"
-CONF_NOTIFY_RECOVERY_ENABLED = "notify_recovery_enabled"
-CONF_NOTIFY_RATE_LIMIT = "notify_rate_limit"
-CONF_NOTIFY_DEVICE_COOLDOWN = "notify_device_cooldown"
-
 # Configuration - History
 CONF_HISTORY_RETENTION_DAYS = "history_retention_days"
 
@@ -121,18 +109,6 @@ DEFAULT_EXCLUDE_INTEGRATIONS = [
 DEFAULT_EXCLUDE_AREAS = []
 DEFAULT_MONITOR_ZIGBEE2MQTT = True
 
-# Defaults - Notifications
-DEFAULT_NOTIFY_SERVICE = "persistent_notification"
-DEFAULT_NOTIFY_INSTANT_ENABLED = True
-DEFAULT_NOTIFY_OFFLINE_MINUTES = 15
-DEFAULT_NOTIFY_BATTERY_CRITICAL_LEVEL = 10
-DEFAULT_NOTIFY_MASS_OFFLINE_THRESHOLD = 3
-DEFAULT_NOTIFY_DAILY_DIGEST = True
-DEFAULT_NOTIFY_DAILY_DIGEST_TIME = "07:00"
-DEFAULT_NOTIFY_RECOVERY_ENABLED = True
-DEFAULT_NOTIFY_RATE_LIMIT = 10  # per hour
-DEFAULT_NOTIFY_DEVICE_COOLDOWN = 30  # minutes
-
 # Defaults - History
 DEFAULT_HISTORY_RETENTION_DAYS = 30
 
@@ -160,10 +136,6 @@ STORAGE_VERSION = 1
 # Device History Storage
 DEVICE_HISTORY_STORAGE_KEY = f"{DOMAIN}.device_history"
 DEVICE_HISTORY_STORAGE_VERSION = 1
-
-# Notification History Storage
-NOTIFICATION_HISTORY_STORAGE_KEY = f"{DOMAIN}.notification_history"
-NOTIFICATION_HISTORY_STORAGE_VERSION = 1
 
 # Battery Prediction
 BATTERY_READING_INTERVAL = 3600  # 1hr dedup
@@ -216,12 +188,3 @@ MAINTENANCE_STORAGE_VERSION = 1
 IGNORE_STORAGE_KEY = f"{DOMAIN}.ignored_devices"
 IGNORE_STORAGE_VERSION = 1
 
-# Notification types
-NOTIFY_TYPE_DEVICE_OFFLINE = "device_offline"
-NOTIFY_TYPE_BATTERY_CRITICAL = "battery_critical"
-NOTIFY_TYPE_MASS_OFFLINE = "mass_offline"
-NOTIFY_TYPE_DEVICE_RECOVERED = "device_recovered"
-NOTIFY_TYPE_DAILY_DIGEST = "daily_digest"
-
-# Mass offline window (seconds) - group if N+ devices go offline within this window
-MASS_OFFLINE_WINDOW = 300  # 5 minutes
