@@ -4,7 +4,7 @@
  * WebSocket-powered, real-time, expandable rows, timeline bars.
  */
 
-const PANEL_VERSION = "1.1.4";
+const PANEL_VERSION = "1.1.5";
 
 // ════════════════════════════════════════════════════════════
 // SECTION 1: Panel Class
